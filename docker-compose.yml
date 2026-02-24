@@ -1,0 +1,157 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:7
+    container_name: macack-mongodb-dev
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+    volumes:
+      - mongodb_data_dev:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - macack-network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: macack-rabbitmq-dev
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_ERLANG_COOKIE: "macack_secret_cookie"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - macack-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: macack-redis-dev
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - macack-network
+
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: gateway-dev
+    command: npm run start:dev
+    volumes:
+      - ./gateway:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: mongodb://root:password@mongodb:27017/gateway_db?authSource=admin
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - macack-network
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service-dev
+    command: npm run start:dev
+    volumes:
+      - ./auth-service:/app
+      - /app/node_modules
+    environment:
+      MONGODB_URI: mongodb://root:password@mongodb:27017/auth_db?authSource=admin
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: super-secret
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - macack-network
+    ports:
+      - "3001:3001"
+
+  catalog-service:
+    build:
+      context: ./catalog-service
+      dockerfile: Dockerfile
+    container_name: catalog-service-dev
+    command: sh -c "npx prisma generate && npm run start:dev"
+    volumes:
+      - ./catalog-service:/app
+      - /app/node_modules
+    environment:
+      DATABASE_URL: mongodb://root:password@mongodb:27017/catalog_db?authSource=admin
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      - gateway
+    networks:
+      - macack-network
+    ports:
+      - "3002:3002"
+
+  # orders-service:
+  #   build:
+  #     context: ./orders-service
+  #     dockerfile: Dockerfile
+  #   container_name: orders-service-dev
+  #   command: sh -c "npx prisma generate && npm run start:dev"
+  #   volumes:
+  #     - ./orders-service:/app
+  #     - /app/node_modules
+  #   environment:
+  #     DATABASE_URL: mongodb://root:password@mongodb:27017/orders_db?authSource=admin
+  #     RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+  #     REDIS_HOST: redis
+  #     REDIS_PORT: 6379
+  #     CHOKIDAR_USEPOLLING: "true"
+  #   depends_on:
+  #     - gateway
+  #   networks:
+  #     - macack-network
+  #   ports:
+  #     - "3004:3004"
+
+volumes:
+  mongodb_data_dev:
+
+networks:
+  macack-network:
+    driver: bridge

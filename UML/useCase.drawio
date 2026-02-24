@@ -1,0 +1,630 @@
+<mxfile host="65bd71144e">
+    <diagram name="Use Case Diagram - Full System" id="use-case-full-system">
+        <mxGraphModel dx="682" dy="563" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2000" pageHeight="1500" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="system-boundary" value="Système de Commande de Gâteaux" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=40;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#333333;fontSize=16;fontStyle=1;swimlaneLine=1;" parent="1" vertex="1">
+                    <mxGeometry x="200" y="100" width="1500" height="1300" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-register" value="S&#39;inscrire" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="80" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-login" value="Se connecter" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="250" y="80" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-profile" value="Gérer profil" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="420" y="80" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-deactivate" value="Désactiver compte" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="590" y="80" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-create-product" value="Publier gâteau" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="200" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-update-product" value="Modifier gâteau" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="250" y="200" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-delete-product" value="Supprimer gâteau" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="420" y="200" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-products" value="Consulter gâteaux" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="600" y="200" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-filter-products" value="Filtrer gâteaux" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="780" y="200" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-manage-categories" value="Gérer catégories" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="950" y="200" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-create-order" value="Créer commande" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="320" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-order" value="Consulter commande" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="250" y="320" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-track-order" value="Suivre commande" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="440" y="320" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-update-order-status" value="Mettre à jour statut" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="620" y="320" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-order-history" value="Voir historique" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="810" y="320" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-available" value="Voir livraisons dispo" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="440" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-propose-price" value="Proposer prix" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="280" y="440" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-accept-delivery" value="Accepter livraison" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="450" y="440" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-update-delivery" value="Màj statut livraison" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="630" y="440" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-assign-delivery" value="Assigner livreur" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="820" y="440" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-pay-order" value="Payer commande" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="560" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-release-payment" value="Libérer paiement" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="250" y="560" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-refund-payment" value="Rembourser" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="430" y="560" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-transactions" value="Voir transactions" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="600" y="560" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-configure-commission" value="Configurer commission" style="ellipse;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="780" y="560" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-request-withdrawal" value="Demander retrait" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="980" y="560" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-approve-withdrawal" value="Approuver retrait" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="1160" y="560" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-rate-user" value="Noter utilisateur" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="680" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-rate-product" value="Noter produit" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="260" y="680" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-ratings" value="Voir notes" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="430" y="680" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-like-product" value="Liker produit" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="600" y="680" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-follow-patissiere" value="Suivre pâtissière" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="770" y="680" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-chat" value="Chatter" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="800" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-send-message" value="Envoyer message" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="250" y="800" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-messages" value="Voir messages" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="430" y="800" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-receive-notif" value="Recevoir notification" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="600" y="800" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-mark-read" value="Marquer comme lu" style="ellipse;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="790" y="800" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-open-dispute" value="Ouvrir litige" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="920" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-dispute" value="Consulter litige" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="250" y="920" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-resolve-dispute" value="Résoudre litige" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="430" y="920" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-user-stats" value="Stats utilisateurs" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="1040" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-order-stats" value="Stats commandes" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="260" y="1040" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-revenue-stats" value="Stats revenus" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="440" y="1040" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-top-performers" value="Top performers" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="610" y="1040" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-view-satisfaction" value="Taux satisfaction" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="790" y="1040" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-manage-users" value="Gérer utilisateurs" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="80" y="1160" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-suspend-user" value="Suspendre utilisateur" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="260" y="1160" width="150" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="uc-manage-all-orders" value="Gérer commandes" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;" parent="system-boundary" vertex="1">
+                    <mxGeometry x="460" y="1160" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="actor-client" value="Client" style="shape=umlActor;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;align=center;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="80" y="300" width="40" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="actor-patissiere" value="Pâtissière" style="shape=umlActor;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;align=center;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="80" y="550" width="40" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="actor-livreur" value="Livreur" style="shape=umlActor;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;align=center;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="80" y="800" width="40" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="actor-admin" value="Admin" style="shape=umlActor;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;align=center;fillColor=#f8cecc;strokeColor=#b85450;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="80" y="1050" width="40" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="actor-superadmin" value="SuperAdmin" style="shape=umlActor;verticalLabelPosition=bottom;labelBackgroundColor=#ffffff;verticalAlign=top;align=center;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=14;fontStyle=1" parent="1" vertex="1">
+                    <mxGeometry x="80" y="1200" width="40" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="line-client-deactivate" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-deactivate" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="160"/>
+                            <mxPoint x="760" y="160"/>
+                            <mxPoint x="760" y="205"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-view-products" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-view-products" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="250"/>
+                            <mxPoint x="760" y="250"/>
+                            <mxPoint x="760" y="325"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-filter" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-filter-products" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="250"/>
+                            <mxPoint x="940" y="250"/>
+                            <mxPoint x="940" y="325"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-create-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-create-order" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="370"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-track" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-track-order" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="370"/>
+                            <mxPoint x="610" y="370"/>
+                            <mxPoint x="610" y="445"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-view-order" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-view-order" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="370"/>
+                            <mxPoint x="420" y="370"/>
+                            <mxPoint x="420" y="445"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-pay" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-pay-order" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="610"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-rate-user" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-rate-user" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="730"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-rate-product" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-rate-product" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="730"/>
+                            <mxPoint x="430" y="730"/>
+                            <mxPoint x="430" y="805"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-like" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-like-product" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="730"/>
+                            <mxPoint x="760" y="730"/>
+                            <mxPoint x="760" y="805"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-follow" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-follow-patissiere" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="730"/>
+                            <mxPoint x="940" y="730"/>
+                            <mxPoint x="940" y="805"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-chat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-chat" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="850"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-send-message" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-send-message" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="850"/>
+                            <mxPoint x="420" y="850"/>
+                            <mxPoint x="420" y="925"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-view-messages" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-view-messages" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="850"/>
+                            <mxPoint x="600" y="850"/>
+                            <mxPoint x="600" y="925"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-client-open-dispute" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6c8ebf;" parent="1" source="actor-client" target="uc-open-dispute" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="330"/>
+                            <mxPoint x="180" y="970"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-pati-create-product" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="actor-patissiere" target="uc-create-product" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="580"/>
+                            <mxPoint x="180" y="250"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-pati-update-product" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="actor-patissiere" target="uc-update-product" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="580"/>
+                            <mxPoint x="180" y="250"/>
+                            <mxPoint x="410" y="250"/>
+                            <mxPoint x="410" y="325"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-pati-delete-product" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="actor-patissiere" target="uc-delete-product" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="580"/>
+                            <mxPoint x="180" y="250"/>
+                            <mxPoint x="600" y="250"/>
+                            <mxPoint x="600" y="325"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-pati-view-orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="actor-patissiere" target="uc-view-order" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="580"/>
+                            <mxPoint x="180" y="370"/>
+                            <mxPoint x="420" y="370"/>
+                            <mxPoint x="420" y="445"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-pati-update-status" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="actor-patissiere" target="uc-update-order-status" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="580"/>
+                            <mxPoint x="180" y="370"/>
+                            <mxPoint x="780" y="370"/>
+                            <mxPoint x="780" y="445"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-pati-view-history" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="actor-patissiere" target="uc-view-order-history" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="580"/>
+                            <mxPoint x="180" y="370"/>
+                            <mxPoint x="980" y="370"/>
+                            <mxPoint x="980" y="445"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-pati-view-transactions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="actor-patissiere" target="uc-view-transactions" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="580"/>
+                            <mxPoint x="180" y="610"/>
+                            <mxPoint x="770" y="610"/>
+                            <mxPoint x="770" y="685"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-pati-withdrawal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="actor-patissiere" target="uc-request-withdrawal" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="580"/>
+                            <mxPoint x="180" y="610"/>
+                            <mxPoint x="1140" y="610"/>
+                            <mxPoint x="1140" y="685"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-pati-chat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#82b366;" parent="1" source="actor-patissiere" target="uc-chat" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="580"/>
+                            <mxPoint x="180" y="850"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-livreur-register" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="actor-livreur" target="uc-register" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="830"/>
+                            <mxPoint x="180" y="160"/>
+                            <mxPoint x="240" y="160"/>
+                            <mxPoint x="240" y="205"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-livreur-login" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="actor-livreur" target="uc-login" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="830"/>
+                            <mxPoint x="180" y="160"/>
+                            <mxPoint x="420" y="160"/>
+                            <mxPoint x="420" y="205"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-livreur-view-available" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="actor-livreur" target="uc-view-available" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="830"/>
+                            <mxPoint x="180" y="490"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-livreur-propose" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="actor-livreur" target="uc-propose-price" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="830"/>
+                            <mxPoint x="180" y="490"/>
+                            <mxPoint x="450" y="490"/>
+                            <mxPoint x="450" y="565"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-livreur-accept" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="actor-livreur" target="uc-accept-delivery" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="830"/>
+                            <mxPoint x="180" y="490"/>
+                            <mxPoint x="630" y="490"/>
+                            <mxPoint x="630" y="565"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-livreur-update-delivery" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="actor-livreur" target="uc-update-delivery" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="830"/>
+                            <mxPoint x="180" y="490"/>
+                            <mxPoint x="810" y="490"/>
+                            <mxPoint x="810" y="565"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-livreur-view-transactions" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="actor-livreur" target="uc-view-transactions" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="830"/>
+                            <mxPoint x="180" y="610"/>
+                            <mxPoint x="770" y="610"/>
+                            <mxPoint x="770" y="685"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-livreur-withdrawal" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="actor-livreur" target="uc-request-withdrawal" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="830"/>
+                            <mxPoint x="180" y="610"/>
+                            <mxPoint x="1140" y="610"/>
+                            <mxPoint x="1140" y="685"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-livreur-chat" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#d6b656;" parent="1" source="actor-livreur" target="uc-chat" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="830"/>
+                            <mxPoint x="180" y="850"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-admin-profile" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" parent="1" source="actor-admin" target="uc-profile" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1080"/>
+                            <mxPoint x="180" y="160"/>
+                            <mxPoint x="590" y="160"/>
+                            <mxPoint x="590" y="205"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-admin-manage-users" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" parent="1" source="actor-admin" target="uc-manage-users" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1080"/>
+                            <mxPoint x="180" y="1210"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-admin-suspend" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" parent="1" source="actor-admin" target="uc-suspend-user" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1080"/>
+                            <mxPoint x="180" y="1210"/>
+                            <mxPoint x="440" y="1210"/>
+                            <mxPoint x="440" y="1285"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-admin-manage-orders" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" parent="1" source="actor-admin" target="uc-manage-all-orders" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1080"/>
+                            <mxPoint x="180" y="1210"/>
+                            <mxPoint x="630" y="1210"/>
+                            <mxPoint x="630" y="1285"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-admin-assign" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" parent="1" source="actor-admin" target="uc-assign-delivery" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1080"/>
+                            <mxPoint x="180" y="490"/>
+                            <mxPoint x="990" y="490"/>
+                            <mxPoint x="990" y="565"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-admin-release" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" parent="1" source="actor-admin" target="uc-release-payment" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1080"/>
+                            <mxPoint x="180" y="610"/>
+                            <mxPoint x="410" y="610"/>
+                            <mxPoint x="410" y="685"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-admin-refund" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" parent="1" source="actor-admin" target="uc-refund-payment" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1080"/>
+                            <mxPoint x="180" y="610"/>
+                            <mxPoint x="600" y="610"/>
+                            <mxPoint x="600" y="685"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-admin-resolve" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" parent="1" source="actor-admin" target="uc-resolve-dispute" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1080"/>
+                            <mxPoint x="180" y="970"/>
+                            <mxPoint x="600" y="970"/>
+                            <mxPoint x="600" y="1045"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-admin-view-stats" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#b85450;" parent="1" source="actor-admin" target="uc-view-user-stats" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1080"/>
+                            <mxPoint x="180" y="1090"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-super-configure" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#9673a6;" parent="1" source="actor-superadmin" target="uc-configure-commission" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1230"/>
+                            <mxPoint x="180" y="610"/>
+                            <mxPoint x="950" y="610"/>
+                            <mxPoint x="950" y="685"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-super-approve" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#9673a6;" parent="1" source="actor-superadmin" target="uc-approve-withdrawal" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1230"/>
+                            <mxPoint x="180" y="610"/>
+                            <mxPoint x="1330" y="610"/>
+                            <mxPoint x="1330" y="685"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="line-super-view-revenue" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#9673a6;" parent="1" source="actor-superadmin" target="uc-view-revenue-stats" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="180" y="1230"/>
+                            <mxPoint x="180" y="1090"/>
+                            <mxPoint x="610" y="1090"/>
+                            <mxPoint x="610" y="1165"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="include-history" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#666666;startArrow=open;startFill=0;endArrow=block;endFill=0;" parent="1" source="uc-update-order-status" target="uc-view-order-history" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="690" y="370"/>
+                            <mxPoint x="870" y="370"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="include-commission" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#666666;startArrow=open;startFill=0;endArrow=block;endFill=0;" parent="1" source="uc-release-payment" target="uc-configure-commission" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="340" y="610"/>
+                            <mxPoint x="840" y="610"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="extend-notif" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;strokeColor=#666666;startArrow=open;startFill=0;endArrow=open;endFill=0;" parent="1" source="uc-chat" target="uc-receive-notif" edge="1">
+                    <mxGeometry relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="340" y="850"/>
+                            <mxPoint x="140" y="850"/>
+                            <mxPoint x="140" y="830"/>
+                            <mxPoint x="780" y="830"/>
+                            <mxPoint x="780" y="925"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="legend" value="Légende :&lt;br&gt;🔹 Client&lt;br&gt;🟢 Pâtissière&lt;br&gt;🟡 Livreur&lt;br&gt;🔴 Admin&lt;br&gt;🟣 SuperAdmin" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=#f0f0f0;align=left;verticalAlign=top;rounded=1;" parent="1" vertex="1">
+                    <mxGeometry x="1700" y="150" width="150" height="130" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

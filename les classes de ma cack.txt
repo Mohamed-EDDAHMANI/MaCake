@@ -12,7 +12,6 @@ Class: User
 - city
 - address
 - description
-- role (CLIENT | PATISSIERE | LIVREUR | ADMIN | SUPERADMIN)
 - status (active | suspended)
 - createdAt
 
@@ -21,7 +20,7 @@ Class: Permissions
 - name (e.g., "create_product", "accept_order", "view_all_orders")
 - description
 
-Class: RolePermissions
+Class: UserPermissions
 - role (CLIENT | PATISSIERE ...)
 - permissionId
 
@@ -51,7 +50,7 @@ Class: SuperAdmin extends Admin
 - fullAccess
 
 ========================
-2️⃣ Gestion des gâteaux (Produit)
+2️⃣ Gestion des gâteaux (Produit / catalog)
 ========================
 
 Class: Product
