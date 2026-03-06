@@ -20,6 +20,7 @@ export default function RootLayout() {
             <Stack.Screen name="(client)" />
             <Stack.Screen name="(patissiere)" />
             <Stack.Screen name="(livreur)" />
+            <Stack.Screen name="test-products" />
           </Stack>
           <StatusBar style="light" />
         </ThemeProvider>

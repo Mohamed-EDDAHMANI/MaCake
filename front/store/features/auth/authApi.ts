@@ -1,6 +1,5 @@
-import { Platform } from "react-native";
-import { File as ExpoFile } from "expo-file-system";
 import { api } from "@/lib/axios";
+import { fileUriToBase64, guessMimeType } from "@/lib/file-utils";
 import type {
   AuthApiResponse,
   AuthResponseData,
@@ -27,43 +26,6 @@ export interface RegisterPayload {
   description?: string;
   role?: UserRole;
   status?: "active" | "suspended";
-}
-
-/**
- * Convert a local file URI (from expo-image-picker) to a base64 string.
- * Returns null if the URI is empty or conversion fails.
- */
-async function fileUriToBase64(uri: string): Promise<string | null> {
-  try {
-    if (!uri) return null;
-    // On web the URI is already a data: or blob URL – send as-is
-    if (Platform.OS === "web") return uri;
-    const file = new ExpoFile(uri);
-    const buffer = await file.arrayBuffer();
-    // Convert ArrayBuffer → base64 without btoa (works on Hermes)
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return globalThis.btoa(binary);
-  } catch (err) {
-    console.warn("[authApi] Failed to convert photo to base64:", err);
-    return null;
-  }
-}
-
-/** Guess MIME type from local URI extension */
-function guessMimeType(uri: string): string {
-  const ext = uri.split(".").pop()?.toLowerCase();
-  const map: Record<string, string> = {
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    webp: "image/webp",
-    gif: "image/gif",
-  };
-  return map[ext ?? ""] || "image/jpeg";
 }
 
 export async function login(
@@ -102,6 +64,34 @@ export async function register(
   const res = await api.post<AuthApiResponse<AuthResponseData>>(
     REGISTER_PATH,
     body,
+  );
+  return res.data;
+}
+
+/* ─── Get profile (user + rating + followers) ─── */
+
+const GET_PROFILE_PATH = "/s1/auth/get-profile";
+
+export interface ProfileRating {
+  average: number;
+  count: number;
+}
+
+export interface GetProfileResponse {
+  user: AuthUser;
+  rating: ProfileRating;
+  followersCount: number;
+}
+
+/**
+ * Fetch current user's profile including rating and followers count.
+ * Requires auth (Bearer token).
+ */
+export async function getProfile(): Promise<
+  AuthApiResponse<GetProfileResponse>
+> {
+  const res = await api.get<AuthApiResponse<GetProfileResponse>>(
+    GET_PROFILE_PATH,
   );
   return res.data;
 }

@@ -46,11 +46,19 @@ export interface AuthApiResponse<T = AuthResponseData | null> {
   path?: string;
 }
 
+/** Profile stats from get-profile (rating + followers). */
+export interface ProfileStats {
+  rating: { average: number; count: number };
+  followersCount: number;
+}
+
 export interface AuthState {
   isAuthenticated: boolean;
   user: AuthUser | null;
   accessToken: string | null;
   refreshToken: string | null;
+  /** Set after getProfile(); used on profile screen for rating & followers. */
+  profileStats: ProfileStats | null;
 }
 
 const initialState: AuthState = {
@@ -58,6 +66,7 @@ const initialState: AuthState = {
   user: null,
   accessToken: null,
   refreshToken: null,
+  profileStats: null,
 };
 
 const authSlice = createSlice({
@@ -94,15 +103,24 @@ const authSlice = createSlice({
         state.user = { ...state.user, ...action.payload };
       }
     },
+    setProfileStats: (state, action: PayloadAction<ProfileStats | null>) => {
+      state.profileStats = action.payload;
+    },
     logout: (state) => {
       state.isAuthenticated = false;
       state.user = null;
       state.accessToken = null;
       state.refreshToken = null;
+      state.profileStats = null;
     },
   },
 });
 
-export const { setCredentials, setCredentialsFromResponse, updateUser, logout } =
-  authSlice.actions;
+export const {
+  setCredentials,
+  setCredentialsFromResponse,
+  updateUser,
+  setProfileStats,
+  logout,
+} = authSlice.actions;
 export default authSlice.reducer;

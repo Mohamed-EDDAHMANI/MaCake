@@ -86,6 +86,7 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      JWT_SECRET: WDulkMiuJhDkWtxJ9pzfWogfOowGAaKDIC8X6DKYVQ9zBMP5kBvpY-qxj4HZBjq_
       MINIO_INTERNAL_URL: http://minio:9000
       CHOKIDAR_USEPOLLING: "true"
     depends_on:
@@ -110,9 +111,10 @@ services:
     environment:
       MONGODB_URI: mongodb://root:password@mongodb:27017/auth_db?authSource=admin
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_AUTH_QUEUE: auth_queue
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      JWT_SECRET: super-secret
+      JWT_SECRET: WDulkMiuJhDkWtxJ9pzfWogfOowGAaKDIC8X6DKYVQ9zBMP5kBvpY-qxj4HZBjq_
       MINIO_ENDPOINT: http://minio:9000
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
@@ -145,6 +147,7 @@ services:
       MONGODB_URI: mongodb://root:password@mongodb:27017/catalog_db?authSource=admin
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       RABBITMQ_CATALOG_QUEUE: catalog_queue
+      RABBITMQ_AUTH_QUEUE: auth_queue
       REDIS_HOST: redis
       REDIS_PORT: 6379
       TCP_PORT: 3002
@@ -172,6 +175,38 @@ services:
       - macack-network
     ports:
       - "3002:3002"
+
+  notation-service:
+    build:
+      context: ./notation-service
+      dockerfile: Dockerfile
+    container_name: notation-service-dev
+    command: npm run start:dev
+    volumes:
+      - ./notation-service:/app
+      - /app/node_modules
+    environment:
+      MONGODB_URI: mongodb://root:password@mongodb:27017/notation_db?authSource=admin
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_NOTATION_QUEUE: notation_queue
+      RABBITMQ_CATALOG_QUEUE: catalog_queue
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      TCP_PORT: 3005
+      PORT: 3005
+      HOST: notation-service
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - macack-network
+    ports:
+      - "3005:3005"
 
   # orders-service:
   #   build:

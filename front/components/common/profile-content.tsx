@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Dimensions,
   Modal,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
 import { BlurView } from "expo-blur";
@@ -15,7 +16,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
-import { logout } from "@/store/features/auth";
+import { logout, getProfile, setProfileStats, updateUser } from "@/store/features/auth";
+import type { Product } from "@/store/features/catalog";
+import { toggleLike } from "@/store/features/catalog";
 import { buildPhotoUrl } from "@/lib/utils";
 import {
   PRIMARY,
@@ -39,14 +42,12 @@ const TAB_NAMES = ["Portfolio", "Reviews", "Services", "About"] as const;
 const DEFAULT_COVER =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuB4LmExY8RmRYcaIsAzzhQV2yzeVmUKwyBc5_wHqq4aGJQeET1Y7JLuGUPeNSc75CcDyye3PZY2pLdT7Wc23f98W82O_gshMP0schcz-4UjJP-MNr020xayqg670kpPQZncMCVm4Kt9Xkw_awkKKDW6aX-xaOgbWS0sUSDMUkbavd0mIivb9kIp1wAMWHa4tm1DdUrmct6butv_jLdz2Xcq6S8yOt2hV6KJiYZ3M25IqLKI2RYKhlxwLbmE6Z3rRTcf6atdza9eZeEe";
 
-const PORTFOLIO_PLACEHOLDERS = [
-  { uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuB3e9RlBVNfJHohOGY1lHj5eOdu43AMkpTxHE3-KRhzoay9AOKK5MF_EtrUrE3CQBMGqG7PLSi6hzt0vjK8sPuMj0tEeTF56uqWCtdh-8ppVNDXnFX7-5r5SanTeil4Hx8dsa7zooTCmZVrXwpF6WYPSDPq9q6mou5Zh0uPecrxY0NCXrbzDn1GtGvJHXPZepI0d4OKL83iN5sfshaj_nx_q2aAOeK6ifqHM09jJK_2uN-6qrZby5z4If1GRNqBuiFgUBtyHp1CITyt", price: "€450+" },
-  { uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAL8XEpKdrGQuu228k-Abl9C25F_4hXjhpmg66oh4t_p6e3mCFbfiRpmSCPHVpoIRaWn78angfMXElJGSHmHT2Fn49zhI8r6gT1VvZGTXIRARCzEEbOtbZgqwWnFibikvhgyiis_KRiwdqs5vwR3AgPdLUh1yBZDkSEjYSNvibP7sAFIuh_B7wnssVCubHB5W4XM2lYKFgf0zWrMZ-WzrK0u8Nlb7aWaOyYlOfn3sMEDVoL3In_ptZiB8iOKhAPrMXaaRR6gCuLhI0W", price: "€25+" },
-  { uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuAnHiNk3NBS_5fwEjxP4a0Lip-kcy7_FPoUZvetsSq0cnuZTnDqf0uRxIGSP3D0f2lAkx2L0Nbo32FVpo1CTcmzQ6SlrBXLiFhetTiqbkdsV4pqa3BMnH7ISVEMGx3i0yEosbIxEQGXJUDSazk6RlStBtUysD5unDywvAEMh1ek63V7gv3u-JW6LPBFgAtq5_chxF0Oe5uRSdLaA11xdtwUYI31VL2Sb2ANIfV7xmjb3nCBtWwrkKtv3ybzsStFdp05JhRr8W8Ey48k", price: "€180+" },
-  { uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuDfo7c36AsAB3wxpxxBnuCJ425Zfk8Bqz8MTDMTQlSpcaXBrYR8IwgIUeXpvbQjsQ62sVJpZpbeZqcdR_iuiPQThaEUcUTCcVUBJR3PTSdoB8pHD2GY78zbVZJAsX-t9VspiLqmtyk1kxG3g7V9LgR7L5b06Ml_q8TpA2mq3eOXn_eupXB73cY6JUs2gqWqD59RZe752Cywf_uAu6UjuQ-JECLrAiQun3Hqw4k5W-pwltfaHHh3n10LB-qa5FWCaGLsWLTJv3gnYN5Z", price: "€320+" },
-  { uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuDDdp6nFM_nFXon1bBm2DMSS3lR93eboqi5jcvt8iFUVwDBKHIIrb79GI2lR7R5yfNAih6CWbMCn6DSHJZ9Ne8kMoWImAokjWuVjk5Sp_tB3nuFva8rE3JYavYAdjyGGCfIRP0aRmBIQUYY74vLm1CbL4gBPY4XpOKALAFyiLQqY76ceVgucV4_YU4dJKJm9NvVllHcFLYI2ii7-3tAtCcOFkWXz4M-L_9UeWBLmSJn8EG771cuIFCzs8olMjDn_IkWLJNwb7-HWOwm", price: "€45+" },
-  { uri: "https://lh3.googleusercontent.com/aida-public/AB6AXuBjIyYiHDQe2lrJ9hQOKZLaTXt8UrDHJyGnkIfbSzof23wd2jtIFXLhJRIeB-3CDOStRvyPBOLHRmV5w3-u8iYQ0V9hH6DayccQHuK_QuiA3s7QoMUrcANIG-KevOYPPyljy39Mc6drsusS7ei_i40HGZucA6JqV76kZUWGxLXh2rhHIH2hvWu8RDTXXBD7_8J7QSw7HiYLeT5vrwsjFDl9KQmtmlxBPhLGGgL75c34pLw5-_k4mNw1u0Va7yOu8UTdQi5nsxU0j41k", price: "€150+" },
-];
+function productImageUri(product: Product): string | null {
+  const raw = product.images?.[0];
+  if (!raw) return null;
+  if (raw.startsWith("http")) return raw;
+  return buildPhotoUrl(raw);
+}
 
 interface ProfileContentProps {
   menuItems?: Array<{ icon: string; label: string; onPress?: () => void }>;
@@ -58,6 +59,7 @@ interface ProfileContentProps {
     role?: string | null;
     photo?: string | null;
     coverPhoto?: string | null;
+    description?: string | null;
   } | null;
   /** Force showing/hiding the back button. Default: show only for other users. */
   showBack?: boolean;
@@ -72,7 +74,46 @@ export function ProfileContent({ menuItems = [], viewedUser, showBack }: Profile
   const router = useRouter();
   const dispatch = useAppDispatch();
   const authUser = useAppSelector((state) => state.auth.user);
+  const profileStats = useAppSelector((state) => state.auth.profileStats);
   const profileUser = viewedUser ?? authUser;
+  const allProducts = useAppSelector((state) => state.catalog.products);
+  const portfolioProducts = useMemo(() => {
+    const uid = profileUser?.id;
+    if (!uid) return [];
+    return allProducts.filter(
+      (p) => (p.patissiereId ?? p.patissiere?.id) === uid
+    );
+  }, [allProducts, profileUser?.id]);
+
+  // Fetch own profile (user + rating + followers) when viewing own profile
+  const [profileLoading, setProfileLoading] = useState(false);
+  const fetchOwnProfile = async () => {
+    if (!authUser?.id) return;
+    setProfileLoading(true);
+    try {
+      const res = await getProfile();
+      if (res.success && res.data) {
+        dispatch(updateUser(res.data.user));
+        dispatch(
+          setProfileStats({
+            rating: res.data.rating,
+            followersCount: res.data.followersCount,
+          }),
+        );
+      }
+    } catch {
+      // Keep existing profileStats on error
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!viewedUser && authUser?.id) {
+      fetchOwnProfile();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchOwnProfile is stable
+  }, [viewedUser, authUser?.id]);
 
   const isOwnProfile = useMemo(() => {
     const a = authUser?.id;
@@ -163,16 +204,34 @@ export function ProfileContent({ menuItems = [], viewedUser, showBack }: Profile
           <Text style={styles.name}>{profileUser?.name ?? "User"}</Text>
           <Text style={styles.subtitle}>{subtitle || profileUser?.email}</Text>
           <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <MaterialIcons name="star" size={14} color="#eab308" />
-              <Text style={styles.statBold}>4.9</Text>
-              <Text style={styles.statMuted}>(215 reviews)</Text>
-            </View>
-            <View style={styles.statDot} />
-            <View style={styles.statItem}>
-              <Text style={styles.statBold}>12.4k</Text>
-              <Text style={styles.statMuted}>Followers</Text>
-            </View>
+            {profileLoading ? (
+              <ActivityIndicator size="small" color={PRIMARY} style={{ marginVertical: 4 }} />
+            ) : (
+              <>
+                <View style={styles.statItem}>
+                  <MaterialIcons name="star" size={14} color="#eab308" />
+                  <Text style={styles.statBold}>
+                    {isOwnProfile && profileStats != null
+                      ? Number(profileStats.rating.average).toFixed(1)
+                      : "0"}
+                  </Text>
+                  <Text style={styles.statMuted}>
+                    ({isOwnProfile && profileStats != null ? profileStats.rating.count : 0} reviews)
+                  </Text>
+                </View>
+                <View style={styles.statDot} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statBold}>
+                    {isOwnProfile && profileStats != null
+                      ? profileStats.followersCount >= 1000
+                        ? `${(profileStats.followersCount / 1000).toFixed(1)}k`
+                        : String(profileStats.followersCount)
+                      : "0"}
+                  </Text>
+                  <Text style={styles.statMuted}>Followers</Text>
+                </View>
+              </>
+            )}
           </View>
 
           {/* Action buttons (only when viewing other user) */}
@@ -189,10 +248,12 @@ export function ProfileContent({ menuItems = [], viewedUser, showBack }: Profile
             </View>
           ) : null}
 
-          {/* Bio */}
-          <Text style={styles.bio}>
-            Specializing in bespoke architectural wedding cakes and French-inspired macarons. Making your celebrations sweeter, one masterpiece at a time.
-          </Text>
+          {/* Bio (from user description in DB) */}
+          {profileUser?.description ? (
+            <Text style={styles.bio}>{profileUser.description}</Text>
+          ) : isOwnProfile ? (
+            <Text style={styles.bioPlaceholder}>Add a bio in Edit profile</Text>
+          ) : null}
         </View>
 
         {/* Tabs */}
@@ -208,20 +269,55 @@ export function ProfileContent({ menuItems = [], viewedUser, showBack }: Profile
           ))}
         </View>
 
-        {/* Portfolio grid */}
+        {/* Portfolio grid: products whose patissiereId = authenticated user (from Redux) */}
         <View style={styles.gridWrap}>
-          {PORTFOLIO_PLACEHOLDERS.map((item, i) => (
-            <View key={i} style={styles.gridItem}>
-              <Image source={{ uri: item.uri }} style={styles.gridImg} contentFit="cover" />
-              <View style={styles.gridPriceBadge}>
-                <Text style={styles.gridPriceText}>{item.price}</Text>
-              </View>
-              <View style={styles.gridFav}>
-                <MaterialIcons name="favorite" size={12} color="#fff" />
-                <Text style={styles.gridFavCount}>1.2k</Text>
-              </View>
-            </View>
-          ))}
+          {portfolioProducts.length === 0 ? (
+            <Text style={styles.portfolioEmpty}>
+              {isOwnProfile ? "No products yet. Add some in Create." : "No portfolio items."}
+            </Text>
+          ) : (
+            portfolioProducts.map((product) => {
+              const uri = productImageUri(product);
+              const isLiked = authUser?.id && (product.likedByUserIds ?? []).includes(authUser.id);
+              return (
+                <Pressable
+                  key={product.id}
+                  style={styles.gridItem}
+                  onPress={() => router.push(`/product/${product.id}` as any)}
+                >
+                  <Image
+                    source={{ uri: uri ?? undefined }}
+                    style={styles.gridImg}
+                    contentFit="cover"
+                  />
+                  <View style={styles.gridPriceBadge}>
+                    <Text style={styles.gridPriceText}>
+                      {product.price != null ? `€${product.price}` : "—"}
+                    </Text>
+                  </View>
+                  <Pressable
+                    style={styles.gridFav}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      if (!authUser) return;
+                      dispatch(toggleLike(product.id));
+                    }}
+                  >
+                    <MaterialIcons
+                      name="favorite"
+                      size={12}
+                      color={isLiked ? PRIMARY : "#fff"}
+                    />
+                    <Text style={styles.gridFavCount}>
+                      {product.likesCount != null && product.likesCount >= 1000
+                        ? `${(product.likesCount / 1000).toFixed(1)}k`
+                        : String(product.likesCount ?? 0)}
+                    </Text>
+                  </Pressable>
+                </Pressable>
+              );
+            })
+          )}
         </View>
 
         {/* Log out (optional quick action for own profile) */}
@@ -435,6 +531,14 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     paddingHorizontal: 8,
   },
+  bioPlaceholder: {
+    marginTop: 24,
+    fontSize: 14,
+    color: SLATE_500,
+    textAlign: "center",
+    fontStyle: "italic",
+    paddingHorizontal: 8,
+  },
   tabsWrap: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -457,6 +561,13 @@ const styles = StyleSheet.create({
     padding: GRID_GAP / 2,
     marginTop: 8,
     paddingHorizontal: GRID_PADDING,
+  },
+  portfolioEmpty: {
+    width: "100%",
+    paddingVertical: 24,
+    fontSize: 14,
+    color: SLATE_500,
+    textAlign: "center",
   },
   gridItem: {
     width: CELL_SIZE,

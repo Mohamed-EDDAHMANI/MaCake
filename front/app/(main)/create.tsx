@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter, Redirect } from "expo-router";
 import * as ImagePicker from "expo-image-picker";
-import { useAppSelector } from "@/store/hooks";
+import { useAppSelector, useAppDispatch } from "@/store/hooks";
+import { fetchCategories, fetchProducts } from "@/store/features/catalog";
+import { fileUriToBase64, guessMimeType } from "@/lib/file-utils";
 import { api } from "@/lib/axios";
 import {
   PRIMARY,
@@ -30,12 +32,14 @@ import {
   SURFACE,
 } from "@/constants/colors";
 
-const CATEGORIES = ["Birthday", "Wedding", "Chocolate", "Vegan", "Fruit", "Custom"];
+const STATIC_CATEGORIES = ["Birthday", "Wedding", "Chocolate", "Vegan", "Fruit", "Custom"];
 
 export default function CreateProductScreen() {
   const router = useRouter();
+  const dispatch = useAppDispatch();
   const user = useAppSelector((s) => s.auth.user);
   const isAuthenticated = useAppSelector((s) => s.auth.isAuthenticated);
+  const { categories: apiCategories, categoriesLoading } = useAppSelector((s) => s.catalog);
 
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
@@ -47,9 +51,17 @@ export default function CreateProductScreen() {
   const [ingredientInput, setIngredientInput] = useState("");
   const [publishing, setPublishing] = useState(false);
 
-  if (!isAuthenticated || user?.role !== "PATISSIERE") {
-    return <Redirect href="/(main)" />;
-  }
+  /* ─── fetch categories via Redux ─── */
+  useEffect(() => {
+    dispatch(fetchCategories());
+    dispatch(fetchProducts());
+  }, [dispatch]);
+
+  /* ─── merge static + API categories, deduplicate ─── */
+  const categories = useMemo(() => {
+    const apiNames = apiCategories.map((c) => c.name);
+    return [...new Set([...STATIC_CATEGORIES, ...apiNames])];
+  }, [apiCategories]);
 
   /* ─── image picker ─── */
   const pickImage = useCallback(
@@ -80,6 +92,11 @@ export default function CreateProductScreen() {
     [images.length],
   );
 
+  /* ─── guard (after all hooks) ─── */
+  if (!isAuthenticated || user?.role !== "PATISSIERE") {
+    return <Redirect href="/(main)" />;
+  }
+
   /* ─── ingredients ─── */
   const addIngredient = () => {
     const trimmed = ingredientInput.trim();
@@ -108,7 +125,21 @@ export default function CreateProductScreen() {
         patissiereId: user?.id,
         ingredients,
       };
-      if (images.length > 0) payload.images = images;
+      if (images.length > 0) {
+        const base64Images: string[] = [];
+        const mimeTypes: string[] = [];
+        for (const uri of images) {
+          const b64 = await fileUriToBase64(uri);
+          if (b64) {
+            base64Images.push(b64);
+            mimeTypes.push(guessMimeType(uri));
+          }
+        }
+        if (base64Images.length > 0) {
+          payload.images = base64Images;
+          payload.imagesMimeTypes = mimeTypes;
+        }
+      }
 
       await api.post("/s2/product/create", payload);
       Alert.alert("Success", "Your product has been published!", [
@@ -256,7 +287,7 @@ export default function CreateProductScreen() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
               >
-                {CATEGORIES.map((cat) => {
+                {categories.map((cat) => {
                   const active = selectedCategory === cat;
                   return (
                     <Pressable

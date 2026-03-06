@@ -3,6 +3,7 @@ export {
   setCredentials,
   setCredentialsFromResponse,
   updateUser,
+  setProfileStats,
   logout,
 } from "./authSlice";
 export type {
@@ -12,7 +13,14 @@ export type {
   AuthResponseData,
   AuthApiResponse,
   AuthState,
+  ProfileStats,
 } from "./authSlice";
 
-export { login, register, updateProfile } from "./authApi";
-export type { LoginPayload, RegisterPayload, UpdateProfilePayload } from "./authApi";
+export { login, register, getProfile, updateProfile } from "./authApi";
+export type {
+  LoginPayload,
+  RegisterPayload,
+  UpdateProfilePayload,
+  GetProfileResponse,
+  ProfileRating,
+} from "./authApi";

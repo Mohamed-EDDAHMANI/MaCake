@@ -11,6 +11,7 @@ import {
 } from "redux-persist";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authReducer } from "./features/auth";
+import { catalogReducer } from "./features/catalog";
 
 const persistConfig = {
   key: "root",
@@ -20,6 +21,7 @@ const persistConfig = {
 
 const rootReducer = combineReducers({
   auth: authReducer,
+  catalog: catalogReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
