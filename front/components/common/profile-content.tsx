@@ -292,7 +292,7 @@ export function ProfileContent({ menuItems = [], viewedUser, showBack }: Profile
                   />
                   <View style={styles.gridPriceBadge}>
                     <Text style={styles.gridPriceText}>
-                      {product.price != null ? `€${product.price}` : "—"}
+                      {product.price != null ? `€${Number(product.price).toFixed(2)}` : "—"}
                     </Text>
                   </View>
                   <Pressable

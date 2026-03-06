@@ -28,6 +28,8 @@ import {
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { fetchProducts, toggleLike } from "@/store/features/catalog";
 import { ProfilePopup } from "@/components/common/profile-popup";
+import { CategoryBadge } from "@/components/common/category-badge";
+import { ProductLikesBadge } from "@/components/common/product-likes-badge";
 import { SearchBar } from "@/components/common/search-bar";
 import { filterProductsBySearchQuery } from "@/lib/product-search";
 import { buildPhotoUrl } from "@/lib/utils";
@@ -257,6 +259,7 @@ export default function ClientExploreScreen() {
                         <MaterialIcons name="cake" size={48} color={SLATE_400} />
                       </View>
                     )}
+                    <CategoryBadge name={product.category?.name ?? ""} />
                     <Pressable
                       style={styles.heartBtn}
                       onPress={(e) => {
@@ -277,7 +280,7 @@ export default function ClientExploreScreen() {
                   </View>
                   <View style={styles.trendingBody}>
                     <View style={styles.trendingRow}>
-                      <View>
+                      <View style={styles.trendingRowLeft}>
                         <Text style={styles.trendingTitle} numberOfLines={1}>{product.title}</Text>
                         <View style={styles.locationRow}>
                           <MaterialIcons
@@ -290,7 +293,7 @@ export default function ClientExploreScreen() {
                           </Text>
                         </View>
                       </View>
-                      <Text style={styles.price}>{product.price.toFixed(0)} MAD</Text>
+                      <Text style={styles.price}>{product.price.toFixed(2)} MAD</Text>
                     </View>
                     <View style={styles.trendingFooter}>
                       <View style={styles.chefRow}>
@@ -303,9 +306,12 @@ export default function ClientExploreScreen() {
                         )}
                         <Text style={styles.chefName} numberOfLines={1}>{pat?.name ?? "—"}</Text>
                       </View>
-                      <View style={styles.ratingRow}>
-                        <MaterialIcons name="star" size={16} color="#eab308" />
-                        <Text style={styles.ratingText}>{(pat?.rating ?? 0).toFixed(1)}</Text>
+                      <View style={styles.trendingMetaRow}>
+                        <View style={styles.ratingRow}>
+                          <MaterialIcons name="star" size={16} color="#eab308" />
+                          <Text style={styles.ratingText}>{(pat?.rating ?? 0).toFixed(1)}</Text>
+                        </View>
+                        <ProductLikesBadge count={product.likesCount ?? 0} compact />
                       </View>
                     </View>
                   </View>
@@ -394,22 +400,26 @@ const styles = StyleSheet.create({
   },
   trendingBody: { padding: 16 },
   trendingRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
+  trendingRowLeft: { flex: 1, minWidth: 0, marginRight: 12 },
   trendingTitle: { fontSize: 18, fontWeight: "700", color: TEXT_PRIMARY },
   locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 },
   locationText: { fontSize: 14, color: SLATE_500 },
   price: { fontSize: 20, fontWeight: "700", color: PRIMARY },
   trendingFooter: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: BORDER_SUBTLE,
+    gap: 10,
+    minWidth: 0,
   },
-  chefRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1 },
+  chefRow: { flexDirection: "row", alignItems: "center", gap: 8, flex: 1, minWidth: 0 },
   chefAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: BORDER },
   chefAvatarPlaceholder: { alignItems: "center", justifyContent: "center" },
   chefName: { fontSize: 14, fontWeight: "500", color: TEXT_PRIMARY, flex: 1 },
+  trendingMetaRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   loadingWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 40 },
   loadingText: { marginTop: 12, fontSize: 14, color: SLATE_500 },
   errorText: { marginTop: 8, fontSize: 14, color: PRIMARY, textAlign: "center" },

@@ -26,6 +26,8 @@ import {
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { fetchProducts, fetchCategories, toggleLike } from "@/store/features/catalog";
 import type { Product } from "@/store/features/catalog";
+import { CategoryBadge } from "@/components/common/category-badge";
+import { ProductLikesBadge } from "@/components/common/product-likes-badge";
 import { SearchBar } from "@/components/common/search-bar";
 import { filterProductsBySearchQuery } from "@/lib/product-search";
 import { buildPhotoUrl } from "@/lib/utils";
@@ -216,8 +218,6 @@ export default function ClientFavoritesScreen() {
               ? safeImageUrl(product.images[0])
               : null;
             const pat = product.patissiere;
-            const categoryName =
-              product.category?.name?.toUpperCase() ?? "PRODUCT";
             const rating = pat?.rating ?? 0;
             const ratingCount = pat?.ratingCount ?? 0;
             return (
@@ -237,11 +237,7 @@ export default function ClientFavoritesScreen() {
                       <MaterialIcons name="cake" size={48} color={SLATE_400} />
                     </View>
                   )}
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryBadgeText} numberOfLines={1}>
-                      {categoryName}
-                    </Text>
-                  </View>
+                  <CategoryBadge name={product.category?.name ?? ""} />
                   <Pressable
                     style={styles.heartBtn}
                     onPress={(e) => {
@@ -259,18 +255,19 @@ export default function ClientFavoritesScreen() {
                         {product.title}
                       </Text>
                       <View style={styles.ratingRow}>
-                        <MaterialIcons name="star" size={14} color={PRIMARY} />
+                        <MaterialIcons name="star" size={14} color="#eab308" />
                         <Text style={styles.ratingText}>
                           {rating.toFixed(1)}
                         </Text>
                         <Text style={styles.reviewCount}>
                           ({ratingCount} reviews)
                         </Text>
+                        <ProductLikesBadge count={product.likesCount ?? 0} compact />
                       </View>
                     </View>
                     <Text style={styles.price}>
                       {product.price != null
-                        ? `${product.price.toFixed(0)} MAD`
+                        ? `${product.price.toFixed(2)} MAD`
                         : "—"}
                     </Text>
                   </View>
@@ -290,11 +287,17 @@ export default function ClientFavoritesScreen() {
                         <Text style={styles.chefName} numberOfLines={1}>
                           {pat?.name ?? "—"}
                         </Text>
-                        <Text style={styles.chefMeta} numberOfLines={1}>
-                          {[pat?.city, `${rating.toFixed(1)} Rating`]
-                            .filter(Boolean)
-                            .join(" • ")}
-                        </Text>
+                        <View style={styles.chefMetaRow}>
+                          {pat?.city ? (
+                            <Text style={styles.chefMeta} numberOfLines={1}>
+                              {pat.city} •{" "}
+                            </Text>
+                          ) : null}
+                          <MaterialIcons name="star" size={12} color="#eab308" />
+                          <Text style={styles.chefMeta}>
+                            {" "}{rating.toFixed(1)} Rating
+                          </Text>
+                        </View>
                       </View>
                     </View>
                     <Pressable
@@ -420,22 +423,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  categoryBadge: {
-    position: "absolute",
-    bottom: 12,
-    left: 12,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 9999,
-    maxWidth: "70%",
-  },
-  categoryBadgeText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: PRIMARY,
-    letterSpacing: 0.5,
-  },
   heartBtn: {
     position: "absolute",
     top: 12,
@@ -453,7 +440,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
   },
-  cardTitleBlock: { flex: 1, marginRight: 12 },
+  cardTitleBlock: { flex: 1, marginRight: 12, minWidth: 0 },
   cardTitle: {
     fontSize: 18,
     fontWeight: "700",
@@ -463,11 +450,12 @@ const styles = StyleSheet.create({
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    flexWrap: "wrap",
+    gap: 6,
     marginTop: 4,
   },
-  ratingText: { fontSize: 14, fontWeight: "700", color: PRIMARY },
-  reviewCount: { fontSize: 12, color: SLATE_400, marginLeft: 4 },
+  ratingText: { fontSize: 14, fontWeight: "700", color: TEXT_PRIMARY },
+  reviewCount: { fontSize: 12, color: SLATE_400 },
   price: { fontSize: 20, fontWeight: "800", color: PRIMARY },
   cardFooter: {
     flexDirection: "row",
@@ -487,7 +475,13 @@ const styles = StyleSheet.create({
   chefAvatarPlaceholder: { alignItems: "center", justifyContent: "center" },
   chefInfo: { flex: 1, minWidth: 0 },
   chefName: { fontSize: 12, fontWeight: "700", color: TEXT_PRIMARY },
-  chefMeta: { fontSize: 10, color: SLATE_500, marginTop: 2 },
+  chefMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2,
+    gap: 2,
+  },
+  chefMeta: { fontSize: 10, color: SLATE_500 },
   orderBtn: {
     backgroundColor: PRIMARY,
     paddingHorizontal: 20,
