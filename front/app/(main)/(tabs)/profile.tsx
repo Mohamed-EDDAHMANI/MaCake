@@ -2,6 +2,7 @@ import { Redirect } from "expo-router";
 import { useAppSelector } from "@/store/hooks";
 import { ProfileContent } from "@/components/common/profile-content";
 import { ClientProfile } from "@/components/client/client-profile";
+import { TabScreenWithAnimation } from "@/components/TabScreenWithAnimation";
 
 export default function MainProfileScreen() {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -12,9 +13,16 @@ export default function MainProfileScreen() {
   }
 
   if (role === "CLIENT") {
-    return <ClientProfile />;
+    return (
+      <TabScreenWithAnimation>
+        <ClientProfile />
+      </TabScreenWithAnimation>
+    );
   }
 
-  return <ProfileContent />;
+  return (
+    <TabScreenWithAnimation>
+      <ProfileContent />
+    </TabScreenWithAnimation>
+  );
 }
-

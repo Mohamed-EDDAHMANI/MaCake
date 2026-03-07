@@ -22,6 +22,7 @@ import {
   BORDER_SUBTLE,
   TEXT_PRIMARY,
   PRIMARY_TINT,
+  FLOATING_TAB_BAR_BOTTOM_SAFE,
 } from "@/constants/colors";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { fetchProducts, fetchCategories, toggleLike } from "@/store/features/catalog";
@@ -223,7 +224,12 @@ export default function ClientFavoritesScreen() {
             return (
               <View key={product.id} style={styles.card}>
                 <Pressable
-                  onPress={() => router.push(`/product/${product.id}` as any)}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(main)/product/[id]",
+                      params: { id: String(product.id) },
+                    } as any)
+                  }
                   style={styles.cardImageWrap}
                 >
                   {imageUri ? (
@@ -302,7 +308,12 @@ export default function ClientFavoritesScreen() {
                     </View>
                     <Pressable
                       style={styles.orderBtn}
-                      onPress={() => router.push(`/product/${product.id}` as any)}
+                      onPress={() =>
+                      router.push({
+                        pathname: "/(main)/product/[id]",
+                        params: { id: String(product.id) },
+                      } as any)
+                    }
                     >
                       <Text style={styles.orderBtnText}>Order Now</Text>
                     </Pressable>
@@ -367,7 +378,7 @@ const styles = StyleSheet.create({
   },
   tabTextActive: { fontWeight: "700", color: PRIMARY },
   scroll: { flex: 1 },
-  scrollContent: { padding: 16, gap: 24 },
+  scrollContent: { padding: 16, paddingBottom: 16 + FLOATING_TAB_BAR_BOTTOM_SAFE, gap: 24 },
   loadingWrap: { alignItems: "center", justifyContent: "center", paddingVertical: 48 },
   loadingText: { marginTop: 12, fontSize: 14, color: SLATE_500 },
   errorText: { marginTop: 8, fontSize: 14, color: PRIMARY, textAlign: "center" },

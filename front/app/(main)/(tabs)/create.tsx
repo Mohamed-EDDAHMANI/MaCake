@@ -31,6 +31,7 @@ import {
   BORDER,
   SURFACE,
 } from "@/constants/colors";
+import { TabScreenWithAnimation } from "@/components/TabScreenWithAnimation";
 
 const STATIC_CATEGORIES = ["Birthday", "Wedding", "Chocolate", "Vegan", "Fruit", "Custom"];
 
@@ -158,8 +159,9 @@ export default function CreateProductScreen() {
   const emptyWide = Math.max(0, 2 - Math.max(0, filledSlots - 3));
 
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      {/* ── Header ── */}
+    <TabScreenWithAnimation>
+      <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
+        {/* ── Header ── */}
       <View
         className="flex-row items-center px-4 py-3 border-b"
         style={{ borderBottomColor: `${PRIMARY}1A`, backgroundColor: "rgba(255,255,255,0.8)" }}
@@ -443,7 +445,8 @@ export default function CreateProductScreen() {
           )}
         </Pressable>
       </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </TabScreenWithAnimation>
   );
 }
 

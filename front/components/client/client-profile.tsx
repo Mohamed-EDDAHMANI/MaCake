@@ -5,7 +5,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useAppDispatch } from "@/store/hooks";
 import { logout } from "@/store/features/auth";
-import { PRIMARY, SLATE_400, TEXT_PRIMARY } from "@/constants/colors";
+import { PRIMARY, SLATE_400 } from "@/constants/colors";
 import { ProfileHero } from "./profile-hero";
 import { WalletTab } from "./wallet-tab";
 import { OrdersTab } from "./orders-tab";
@@ -57,26 +57,6 @@ export function ClientProfile() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top"]}>
-      {/* ─ Header ─ */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-white border-b" style={{ borderBottomColor: `${PRIMARY}0D` }}>
-        <Pressable
-          className="w-10 h-10 items-center justify-center"
-          onPress={() => {
-            if (router.canGoBack()) router.back();
-            else router.replace("/(main)");
-          }}
-        >
-          <MaterialIcons name="arrow-back-ios" size={20} color={TEXT_PRIMARY} />
-        </Pressable>
-        <Text className="text-lg font-bold text-slate-900 flex-1 text-center">Profile</Text>
-        <Pressable
-          className="w-10 h-10 items-center justify-center"
-          onPress={() => router.push("/settings" as any)}
-        >
-          <MaterialIcons name="settings" size={22} color={TEXT_PRIMARY} />
-        </Pressable>
-      </View>
-
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ paddingBottom: 24 }}

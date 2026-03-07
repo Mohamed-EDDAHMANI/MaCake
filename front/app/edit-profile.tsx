@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { Image } from "expo-image";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -20,6 +19,7 @@ import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { updateUser, updateProfile } from "@/store/features/auth";
 import { buildPhotoUrl } from "@/lib/utils";
 import { PRIMARY, SLATE_400, TEXT_PRIMARY, PRIMARY_TINT } from "@/constants/colors";
+import { ProfileCoverHero } from "@/components/common/profile-cover-hero";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -137,32 +137,16 @@ export default function EditProfileScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Avatar Section */}
-          <View className="items-center py-8">
-            <Pressable onPress={pickPhoto} className="relative">
-              <View
-                className="w-32 h-32 rounded-full border-4 border-white overflow-hidden bg-white"
-                style={styles.avatarShadow}
-              >
-                {displayPhoto ? (
-                  <Image source={{ uri: displayPhoto }} style={{ width: "100%", height: "100%" }} contentFit="cover" />
-                ) : (
-                  <View className="w-full h-full items-center justify-center" style={{ backgroundColor: PRIMARY_TINT }}>
-                    <MaterialIcons name="person" size={56} color={PRIMARY} />
-                  </View>
-                )}
-              </View>
-              <View
-                className="absolute bottom-0 right-0 w-10 h-10 rounded-full items-center justify-center border-4 border-white"
-                style={[{ backgroundColor: PRIMARY }, styles.cameraShadow]}
-              >
-                <MaterialIcons name="photo-camera" size={20} color="#fff" />
-              </View>
-            </Pressable>
+          {/* Cover + profile pic (tap avatar to change) */}
+          <ProfileCoverHero
+            avatarUri={localPhoto ?? user?.photo ?? null}
+            coverUri={user?.coverPhoto ?? null}
+            onAvatarPress={pickPhoto}
+          >
             <Pressable onPress={pickPhoto} className="mt-4">
               <Text className="text-sm font-semibold" style={{ color: PRIMARY }}>Change Profile Picture</Text>
             </Pressable>
-          </View>
+          </ProfileCoverHero>
 
           {/* Form Fields */}
           <View className="px-6 gap-5">
@@ -299,20 +283,6 @@ export default function EditProfileScreen() {
 
 /* ─── styles that NativeWind can't handle (shadows, rgba bg) ─── */
 const styles = StyleSheet.create({
-  avatarShadow: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  cameraShadow: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 4,
-  },
   bottomBar: {
     backgroundColor: "rgba(255,255,255,0.92)",
   },

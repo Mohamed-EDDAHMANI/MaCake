@@ -19,7 +19,7 @@ import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { logout, getProfile, setProfileStats, updateUser } from "@/store/features/auth";
 import type { Product } from "@/store/features/catalog";
 import { toggleLike } from "@/store/features/catalog";
-import { buildPhotoUrl } from "@/lib/utils";
+import { buildPhotoUrl, getProductDetailPath } from "@/lib/utils";
 import {
   PRIMARY,
   BACKGROUND_LIGHT,
@@ -283,7 +283,7 @@ export function ProfileContent({ menuItems = [], viewedUser, showBack }: Profile
                 <Pressable
                   key={product.id}
                   style={styles.gridItem}
-                  onPress={() => router.push(`/product/${product.id}` as any)}
+                  onPress={() => router.push(getProductDetailPath(product.id) as any)}
                 >
                   <Image
                     source={{ uri: uri ?? undefined }}

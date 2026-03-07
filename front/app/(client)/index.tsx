@@ -24,6 +24,7 @@ import {
   BORDER_SUBTLE,
   PRIMARY_TINT,
   TEXT_PRIMARY,
+  FLOATING_TAB_BAR_BOTTOM_SAFE,
 } from "@/constants/colors";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { fetchProducts, toggleLike } from "@/store/features/catalog";
@@ -249,7 +250,12 @@ export default function ClientExploreScreen() {
                 <Pressable
                   key={product.id}
                   style={styles.trendingCard}
-                  onPress={() => router.push(`/product/${product.id}` as any)}
+                  onPress={() =>
+                    router.push({
+                      pathname: "/(main)/product/[id]",
+                      params: { id: String(product.id) },
+                    } as any)
+                  }
                 >
                   <View style={styles.trendingImageWrap}>
                     {imageUri ? (
@@ -359,7 +365,7 @@ const styles = StyleSheet.create({
   chipTextActive: { color: SURFACE, fontWeight: "600" },
   chipTextInactive: { color: PRIMARY, fontWeight: "500" },
   main: { flex: 1 },
-  mainContent: { paddingBottom: 24 },
+  mainContent: { paddingBottom: 24 + FLOATING_TAB_BAR_BOTTOM_SAFE },
   section: { paddingVertical: 16, paddingHorizontal: 16 },
   sectionTitle: { fontSize: 18, fontWeight: "700", color: TEXT_PRIMARY, marginBottom: 12 },
   featuredScroll: { flexDirection: "row", gap: 16 },

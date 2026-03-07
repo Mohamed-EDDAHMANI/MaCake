@@ -19,3 +19,6 @@ export const SLATE_700 = "#334155";
 export const SLATE_800 = "#1e293b";
 /** Text on light background – strong contrast */
 export const TEXT_PRIMARY = "#0f172a";
+
+/** Extra padding at bottom when floating tab bar is visible (tab bar height + bottom margin + gap) */
+export const FLOATING_TAB_BAR_BOTTOM_SAFE = 88;

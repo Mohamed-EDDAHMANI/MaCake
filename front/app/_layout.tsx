@@ -22,7 +22,7 @@ export default function RootLayout() {
             <Stack.Screen name="(livreur)" />
             <Stack.Screen name="test-products" />
           </Stack>
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
         </ThemeProvider>
       </PersistGate>
     </Provider>
