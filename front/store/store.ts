@@ -12,6 +12,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { authReducer } from "./features/auth";
 import { catalogReducer } from "./features/catalog";
+import { followReducer } from "./features/follow";
 
 const persistConfig = {
   key: "root",
@@ -22,6 +23,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   auth: authReducer,
   catalog: catalogReducer,
+  follow: followReducer,
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -38,5 +40,7 @@ export const store = configureStore({
 
 export const persistor = persistStore(store);
 
-export type RootState = ReturnType<typeof store.getState>;
+// Derive RootState from rootReducer so state.auth/state.catalog are typed;
+// store.getState() can be inferred as PersistPartial only when using persistReducer.
+export type RootState = ReturnType<typeof rootReducer>;
 export type AppDispatch = typeof store.dispatch;

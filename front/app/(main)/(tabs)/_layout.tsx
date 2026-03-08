@@ -55,11 +55,11 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="favorites"
         options={{
-          title: "Favorites",
+          title: "Likes",
           tabBarIcon: ({ color, focused }) => (
             <AnimatedTabIcon
               iconName="favorite"
-              title="Favorites"
+              title="Likes"
               focused={focused}
               color={color}
             />

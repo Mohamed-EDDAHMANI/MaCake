@@ -19,6 +19,7 @@ import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { logout, getProfile, setProfileStats, updateUser } from "@/store/features/auth";
 import type { Product } from "@/store/features/catalog";
 import { toggleLike } from "@/store/features/catalog";
+import { toggleFollow } from "@/store/features/follow";
 import { buildPhotoUrl, getProductDetailPath } from "@/lib/utils";
 import {
   PRIMARY,
@@ -26,6 +27,7 @@ import {
   SLATE_400,
   SLATE_500,
   SLATE_600,
+  SLATE_700,
   SLATE_800,
   SURFACE,
   BORDER,
@@ -79,6 +81,10 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
   const profileStats = useAppSelector((state) => state.auth.profileStats);
   const profileUser = viewedUser ?? authUser;
   const allProducts = useAppSelector((state) => state.catalog.products);
+  const followStatus = useAppSelector((state) =>
+    viewedUser?.id ? state.follow.statusByPatissiere[viewedUser.id] : undefined
+  );
+  const followLoading = useAppSelector((state) => state.follow.followLoading);
   const portfolioProducts = useMemo(() => {
     const uid = profileUser?.id;
     if (!uid) return [];
@@ -230,15 +236,17 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
                 <View style={styles.statDot} />
                 <View style={styles.statItem}>
                   <Text style={styles.statBold}>
-                    {isOwnProfile && profileStats != null
-                      ? profileStats.followersCount >= 1000
-                        ? `${(profileStats.followersCount / 1000).toFixed(1)}k`
-                        : String(profileStats.followersCount)
-                      : viewedUserStats
-                        ? viewedUserStats.followersCount >= 1000
-                          ? `${(viewedUserStats.followersCount / 1000).toFixed(1)}k`
-                          : String(viewedUserStats.followersCount)
-                        : "0"}
+                    {(() => {
+                      const count =
+                        viewedUser?.id && followStatus != null
+                          ? followStatus.count
+                          : isOwnProfile && profileStats != null
+                            ? profileStats.followersCount
+                            : viewedUserStats?.followersCount ?? 0;
+                      return count >= 1000
+                        ? `${(count / 1000).toFixed(1)}k`
+                        : String(count);
+                    })()}
                   </Text>
                   <Text style={styles.statMuted}>Followers</Text>
                 </View>
@@ -258,11 +266,35 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
           </View>
 
           {/* Follow / Message buttons after bio */}
-          {!isOwnProfile ? (
+          {!isOwnProfile && viewedUser?.id ? (
             <View style={styles.actionRow}>
-              <Pressable style={styles.followBtn}>
-                <MaterialIcons name="person-add" size={20} color="#fff" />
-                <Text style={styles.followBtnText}>Follow</Text>
+              <Pressable
+                style={[styles.followBtn, followStatus?.following && styles.followBtnFollowing]}
+                onPress={() => dispatch(toggleFollow(viewedUser.id))}
+                disabled={followLoading}
+              >
+                {followLoading ? (
+                  <ActivityIndicator
+                    size="small"
+                    color={followStatus?.following ? SLATE_700 : "#fff"}
+                  />
+                ) : (
+                  <>
+                    <MaterialIcons
+                      name={followStatus?.following ? "check" : "person-add"}
+                      size={20}
+                      color={followStatus?.following ? SLATE_700 : "#fff"}
+                    />
+                    <Text
+                      style={[
+                        styles.followBtnText,
+                        followStatus?.following && styles.followBtnTextFollowing,
+                      ]}
+                    >
+                      {followStatus?.following ? "Following" : "Follow"}
+                    </Text>
+                  </>
+                )}
               </Pressable>
               <Pressable style={styles.messageBtn}>
                 <MaterialIcons name="mail-outline" size={20} color={TEXT_PRIMARY} />
@@ -531,29 +563,37 @@ const styles = StyleSheet.create({
   },
   followBtn: {
     flex: 1,
-    height: 48,
+    height: 44,
     backgroundColor: PRIMARY,
-    borderRadius: 12,
+    borderRadius: 22,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    shadowColor: PRIMARY,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
+    gap: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  followBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
+  followBtnFollowing: {
+    backgroundColor: SURFACE,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  followBtnText: { fontSize: 15, fontWeight: "600", color: "#fff" },
+  followBtnTextFollowing: { color: SLATE_700, fontWeight: "600" },
   messageBtn: {
     flex: 1,
-    height: 48,
+    height: 44,
     backgroundColor: BORDER_SUBTLE,
-    borderRadius: 12,
+    borderRadius: 22,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: 6,
   },
   messageBtnText: { fontSize: 15, fontWeight: "700", color: TEXT_PRIMARY },
   bioSection: {

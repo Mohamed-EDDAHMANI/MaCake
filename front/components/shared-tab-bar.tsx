@@ -32,14 +32,15 @@ const tabBarStyles = StyleSheet.create({
   },
   iconWrapActive: {
     backgroundColor: `${PRIMARY}15`,
-    width: 90,
+    width: 80,
     height: 36,
     borderRadius: 100,
-    paddingStart: 20,
-    paddingHorizontal: -40,
+    paddingStart: 30,
+    // paddingHorizontal: -40,
   },
   iconContent: {
     flexDirection: "row",
+    // backgroundColor: "red",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -50,9 +51,12 @@ const tabBarStyles = StyleSheet.create({
     justifyContent: "center",
   },
   titleWrapper: {
+    // backgroundColor: "green",
     overflow: "hidden",
+    marginStart: -5,
   },
   titleText: {
+    // backgroundColor: "red",
     fontSize: 12,
     fontWeight: "600",
     letterSpacing: 0.3,
@@ -143,7 +147,7 @@ export function getSharedTabBarScreenOptions() {
         height: 64,
         paddingTop: 0,
         paddingBottom: 0,
-        paddingHorizontal: 6,
+        paddingHorizontal: 13,
         backgroundColor:
           Platform.OS === "android" ? "rgba(255,255,255,0.95)" : "transparent",
         borderTopWidth: 0,
