@@ -300,19 +300,21 @@ export function AppSidebar({ visible, onClose }: AppSidebarProps) {
                     <Text style={styles.sectionLabel}>DASHBOARD</Text>
                     <Pressable
                       style={({ pressed }) => [
-                        styles.roleItem,
-                        pressed && styles.roleItemPressed,
+                        styles.navItem,
+                        pressed && styles.navItemPressed,
                       ]}
                       onPress={roleDashboardItem.onPress}
                     >
-                      <View style={styles.roleIconWrap}>
-                        <MaterialIcons
-                          name={roleDashboardItem.icon as any}
-                          size={20}
-                          color={PRIMARY}
-                        />
+                      <View style={styles.navItemLeft}>
+                        <View style={styles.navIconWrap}>
+                          <MaterialIcons
+                            name={roleDashboardItem.icon as any}
+                            size={19}
+                            color={PRIMARY}
+                          />
+                        </View>
+                        <Text style={styles.navLabel}>{roleDashboardItem.label}</Text>
                       </View>
-                      <Text style={styles.roleItemLabel}>{roleDashboardItem.label}</Text>
                     </Pressable>
                   </View>
                 </>
@@ -630,40 +632,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
     color: PRIMARY,
-  },
-
-  // ── Role dashboard item ──
-  roleItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    backgroundColor: PRIMARY_10,
-    borderWidth: 1,
-    borderColor: BORDER_SUBTLE,
-    marginVertical: 2,
-  },
-  roleItemPressed: {
-    backgroundColor: PRIMARY_05,
-  },
-  roleIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 11,
-    backgroundColor: PRIMARY_05,
-    borderWidth: 1,
-    borderColor: SLATE_400,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  roleItemLabel: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "600",
-    color: PRIMARY,
-    letterSpacing: 0.1,
   },
 
   // ── Footer ──

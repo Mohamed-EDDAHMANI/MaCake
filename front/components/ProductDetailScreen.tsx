@@ -62,17 +62,14 @@ export default function ProductDetailScreen() {
   const loading = useAppSelector((state) => state.catalog.selectedProductLoading);
   const error = useAppSelector((state) => state.catalog.selectedProductError);
 
-  // Use selectedProduct if it matches the current ID, otherwise fall back to the list product
   const product = selectedProduct?.id === id ? selectedProduct : productFromList;
   const isLiked = user?.id && (product?.likedByUserIds ?? []).includes(user.id);
   const insets = useSafeAreaInsets();
 
-  // Always fetch fresh product data when the ID changes, and clear stale selectedProduct
   useEffect(() => {
     if (id) {
       dispatch(fetchProductById(id));
     }
-
     return () => {
       dispatch(clearSelectedProduct());
     };
@@ -136,11 +133,14 @@ export default function ProductDetailScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const heroScrollRef = useRef<ScrollView>(null);
 
-  const onHeroScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const x = e.nativeEvent.contentOffset.x;
-    const index = Math.round(x / SCREEN_WIDTH);
-    setCurrentImageIndex(Math.min(Math.max(0, index), imageCount - 1));
-  }, [imageCount]);
+  const onHeroScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const x = e.nativeEvent.contentOffset.x;
+      const index = Math.round(x / SCREEN_WIDTH);
+      setCurrentImageIndex(Math.min(Math.max(0, index), imageCount - 1));
+    },
+    [imageCount]
+  );
 
   const activeDotIndex = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -158,9 +158,8 @@ export default function ProductDetailScreen() {
   const likesCount = product.likesCount ?? 0;
   const categoryName = product.category?.name?.toUpperCase() ?? "";
 
-  // Top icons: always in layout; gradually fade out as user scrolls
   const scrollY = useRef(new Animated.Value(0)).current;
-  const FADE_SCROLL_RANGE = 100; // over this many px scroll, icons go from 1 to 0 opacity
+  const FADE_SCROLL_RANGE = 100;
   const [iconsTappable, setIconsTappable] = useState(true);
 
   const topIconsOpacity = useMemo(
@@ -183,9 +182,15 @@ export default function ProductDetailScreen() {
     { useNativeDriver: true, listener: onScrollNative }
   );
 
+  // KEY TRICK: the hero block lives inside the vertical ScrollView (so vertical
+  // swipes on it are caught by the outer scroll), but we counter-translate it
+  // by +scrollY so it visually stays pinned to the top of the screen.
+  // The inner horizontal ScrollView still gets horizontal swipe events normally.
+  const heroTranslateY = scrollY;
+
   return (
     <View style={styles.safe} key={id}>
-      {/* Top icons – fixed; fade out gradually on scroll */}
+      {/* Top icons – fixed above everything; fade out on scroll */}
       <Animated.View
         style={[
           styles.heroActionsOverlay,
@@ -205,10 +210,7 @@ export default function ProductDetailScreen() {
             <Pressable
               style={styles.heroBtnSmall}
               onPress={() => {
-                if (!user) {
-                  showAuthModal();
-                  return;
-                }
+                if (!user) { showAuthModal(); return; }
                 dispatch(toggleLike(product.id));
               }}
             >
@@ -224,10 +226,15 @@ export default function ProductDetailScreen() {
         showsVerticalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        nestedScrollEnabled
       >
-        {/* Hero: horizontal image carousel (inside vertical scroll so horizontal swipe works) */}
-        <View style={styles.heroBlock}>
+        {/*
+          Hero block is INSIDE the vertical scroll, but translateY cancels the
+          scroll offset so images appear fixed. The horizontal ScrollView inside
+          still handles swipe-X independently — no gesture conflict.
+        */}
+        <Animated.View
+          style={[styles.heroBlock, { transform: [{ translateY: heroTranslateY }] }]}
+        >
           <ScrollView
             ref={heroScrollRef}
             horizontal
@@ -259,45 +266,45 @@ export default function ProductDetailScreen() {
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
-          {/* Numbers on the left; dots centered on X, slightly offset on Y */}
           <View style={styles.paginationWrap} pointerEvents="none">
             <Text style={styles.paginationCount}>
               {currentImageIndex + 1} / {imageCount}
             </Text>
             <View style={styles.paginationDotsCenter}>
               <View style={styles.paginationDots}>
-              {Array.from({ length: imageCount }).map((_, i) => {
-                const scale = activeDotIndex.interpolate({
-                  inputRange: [i - 0.5, i, i + 0.5],
-                  outputRange: [1, 1.25, 1],
-                  extrapolate: "clamp",
-                });
-                const opacity = activeDotIndex.interpolate({
-                  inputRange: [i - 0.5, i, i + 0.5],
-                  outputRange: [0.5, 1, 0.5],
-                  extrapolate: "clamp",
-                });
-                return (
-                  <Animated.View
-                    key={i}
-                    style={[
-                      styles.paginationDot,
-                      {
-                        opacity,
-                        transform: [{ scale }],
-                        backgroundColor: currentImageIndex === i ? PRIMARY : "rgba(255,255,255,0.6)",
-                      },
-                    ]}
-                  />
-              );
-            })}
+                {Array.from({ length: imageCount }).map((_, i) => {
+                  const scale = activeDotIndex.interpolate({
+                    inputRange: [i - 0.5, i, i + 0.5],
+                    outputRange: [1, 1.25, 1],
+                    extrapolate: "clamp",
+                  });
+                  const opacity = activeDotIndex.interpolate({
+                    inputRange: [i - 0.5, i, i + 0.5],
+                    outputRange: [0.5, 1, 0.5],
+                    extrapolate: "clamp",
+                  });
+                  return (
+                    <Animated.View
+                      key={i}
+                      style={[
+                        styles.paginationDot,
+                        {
+                          opacity,
+                          transform: [{ scale }],
+                          backgroundColor:
+                            currentImageIndex === i ? PRIMARY : "rgba(255,255,255,0.6)",
+                        },
+                      ]}
+                    />
+                  );
+                })}
               </View>
             </View>
           </View>
-        </View>
-        {/* Content card */}
+        </Animated.View>
+
+        {/* Content card – scrolls up over the pinned hero */}
         <View style={styles.contentCard}>
-          {/* Tags */}
           {categoryName ? (
             <View style={styles.tagsRow}>
               <View style={styles.tag}>
@@ -306,7 +313,6 @@ export default function ProductDetailScreen() {
             </View>
           ) : null}
 
-          {/* Title + Price */}
           <View style={styles.titleRow}>
             <Text style={styles.title} numberOfLines={2}>
               {product.title}
@@ -316,7 +322,6 @@ export default function ProductDetailScreen() {
             </Text>
           </View>
 
-          {/* Star rating + Likes */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <MaterialIcons name="star" size={18} color={STAR_YELLOW} />
@@ -329,7 +334,6 @@ export default function ProductDetailScreen() {
             </View>
           </View>
 
-          {/* Description */}
           {product.description ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>DESCRIPTION</Text>
@@ -337,17 +341,14 @@ export default function ProductDetailScreen() {
             </View>
           ) : null}
 
-          {/* Chef card */}
           {pat && (
             <View style={styles.chefCard}>
               <Pressable
                 style={styles.chefCardRow}
                 onPress={() => {
-                  if (!user) {
-                    showAuthModal();
-                    return;
-                  }
-                  if (pat?.id) router.push({ pathname: "/(main)/profile/[id]", params: { id: String(pat.id) } } as any);
+                  if (!user) { showAuthModal(); return; }
+                  if (pat?.id)
+                    router.push({ pathname: "/(main)/profile/[id]", params: { id: String(pat.id) } } as any);
                 }}
               >
                 <View style={styles.chefMain}>
@@ -388,11 +389,9 @@ export default function ProductDetailScreen() {
                 <Pressable
                   onPress={(e) => {
                     e.stopPropagation();
-                    if (!user) {
-                      showAuthModal();
-                      return;
-                    }
-                    if (pat?.id) router.push({ pathname: "/(main)/profile/[id]", params: { id: String(pat.id) } } as any);
+                    if (!user) { showAuthModal(); return; }
+                    if (pat?.id)
+                      router.push({ pathname: "/(main)/profile/[id]", params: { id: String(pat.id) } } as any);
                   }}
                 >
                   <Text style={styles.viewPortfolio}>View Portfolio</Text>
@@ -401,7 +400,6 @@ export default function ProductDetailScreen() {
             </View>
           )}
 
-          {/* Highlights (placeholder if we have ingredients or static) */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>HIGHLIGHTS</Text>
             <View style={styles.highlightsGrid}>
