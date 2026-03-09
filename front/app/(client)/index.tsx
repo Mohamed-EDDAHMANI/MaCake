@@ -30,6 +30,7 @@ import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { useAuthModal } from "@/contexts/AuthModalContext";
 import { fetchProducts, toggleLike } from "@/store/features/catalog";
 import { ProfilePopup } from "@/components/common/profile-popup";
+import { AppSidebar } from "@/components/common/app-sidebar";
 import { CategoryBadge } from "@/components/common/category-badge";
 import { ProductLikesBadge } from "@/components/common/product-likes-badge";
 import { SearchBar } from "@/components/common/search-bar";
@@ -78,6 +79,7 @@ export default function ClientExploreScreen() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [showProfilePopup, setShowProfilePopup] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const router = useRouter();
   const dispatch = useAppDispatch();
   const { showAuthModal } = useAuthModal();
@@ -106,75 +108,69 @@ export default function ClientExploreScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
+      {/* Fixed Header — outside ScrollView so touches always work when scrolled */}
+      <View style={styles.headerContainer} pointerEvents="box-none">
+        <BlurView
+          intensity={45}
+          tint="light"
+          {...(Platform.OS === "android" ? { experimentalBlurMethod: "dimezisBlurView" } : {})}
+          style={StyleSheet.absoluteFillObject}
+          pointerEvents="none"
+        />
+        <View style={[styles.headerColorOverlay, { pointerEvents: "none" }]} />
+
+        <View style={styles.header} pointerEvents="box-none">
+          <Pressable style={styles.iconBtn} hitSlop={12} onPress={() => setSidebarOpen(true)}>
+            <MaterialIcons name="menu" size={28} color={PRIMARY} />
+          </Pressable>
+          <Text style={styles.logo}>MaCack</Text>
+          <Pressable style={[styles.iconBtn, styles.avatarBtn]} hitSlop={12} onPress={openPopup}>
+            {userPhoto ? (
+              <Image source={{ uri: userPhoto }} style={styles.avatarImg} contentFit="cover" />
+            ) : (
+              <MaterialIcons name="person" size={24} color={PRIMARY} />
+            )}
+          </Pressable>
+        </View>
+
+        <ProfilePopup
+          visible={showProfilePopup}
+          onClose={() => setShowProfilePopup(false)}
+          profileRoute="/(main)/profile"
+        />
+
+        <AppSidebar visible={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+        <View pointerEvents="box-none">
+          <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
+        </View>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsScroll}
+          style={styles.chipsScrollView}
+          pointerEvents="box-none"
+        >
+          {CATEGORIES.map((cat) => (
+            <Pressable
+              key={cat}
+              onPress={() => setSelectedCategory(cat)}
+              style={[styles.chip, selectedCategory === cat ? styles.chipActive : styles.chipInactive]}
+            >
+              <Text style={[styles.chipText, selectedCategory === cat ? styles.chipTextActive : styles.chipTextInactive]}>
+                {cat}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
       <ScrollView
         style={styles.main}
         contentContainerStyle={styles.mainContent}
         showsVerticalScrollIndicator={false}
-        stickyHeaderIndices={[0]}
       >
-        {/* Sticky Header */}
-        <View style={styles.headerContainer}>
-          <BlurView
-            intensity={45}
-            tint="light"
-            {...(Platform.OS === "android" ? { experimentalBlurMethod: "dimezisBlurView" } : {})}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <View style={styles.headerColorOverlay} />
-
-          <View style={styles.header}>
-            <Pressable style={styles.iconBtn} hitSlop={12}>
-              <MaterialIcons name="menu" size={28} color={PRIMARY} />
-            </Pressable>
-            <Text style={styles.logo}>MaCack</Text>
-            <Pressable style={[styles.iconBtn, styles.avatarBtn]} hitSlop={12} onPress={openPopup}>
-              {userPhoto ? (
-                <Image source={{ uri: userPhoto }} style={styles.avatarImg} contentFit="cover" />
-              ) : (
-                <MaterialIcons name="person" size={24} color={PRIMARY} />
-              )}
-            </Pressable>
-          </View>
-
-          <ProfilePopup
-            visible={showProfilePopup}
-            onClose={() => setShowProfilePopup(false)}
-            profileRoute="/(main)/profile"
-          />
-
-          <SearchBar value={searchQuery} onChangeText={setSearchQuery} />
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.chipsScroll}
-            style={styles.chipsScrollView}
-          >
-            {CATEGORIES.map((cat) => (
-              <Pressable
-                key={cat}
-                onPress={() => setSelectedCategory(cat)}
-                style={[styles.chip, selectedCategory === cat ? styles.chipActive : styles.chipInactive]}
-              >
-                <Text style={[styles.chipText, selectedCategory === cat ? styles.chipTextActive : styles.chipTextInactive]}>
-                  {cat}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Test Products Button */}
-        <View style={styles.section}>
-          <Pressable
-            style={styles.testBtn}
-            onPress={() => router.push("/test-products")}
-          >
-            <MaterialIcons name="science" size={20} color="#fff" />
-            <Text style={styles.testBtnText}>View All Products (Test)</Text>
-          </Pressable>
-        </View>
-
         {/* Featured */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Featured Masterpieces</Text>
@@ -449,18 +445,4 @@ const styles = StyleSheet.create({
   emptyText: { marginTop: 8, fontSize: 14, color: SLATE_400 },
   ratingRow: { flexDirection: "row", alignItems: "center", gap: 4 },
   ratingText: { fontSize: 14, fontWeight: "700", color: TEXT_PRIMARY },
-  testBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: PRIMARY,
-    paddingVertical: 14,
-    borderRadius: 12,
-  },
-  testBtnText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
-  },
 });

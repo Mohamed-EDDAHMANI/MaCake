@@ -24,6 +24,8 @@ export interface AuthUser {
   city?: string | null;
   address?: string | null;
   description?: string | null;
+  /** Client only: from auth-service get-profile / login */
+  walletBalance?: number;
 }
 
 // Auth-service success response data (login/register)

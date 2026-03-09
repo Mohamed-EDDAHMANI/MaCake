@@ -4,8 +4,16 @@ export const PRIMARY_DARK = "#b71552";
 export const PRIMARY_TINT = "#da1b612E";
 /** Primary tint ~12% – subtle borders/accents */
 export const PRIMARY_TINT_SUBTLE = "#da1b611F";
+/** Primary 5% – hover / light bg (sidebar items) */
+export const PRIMARY_05 = "#da1b610D";
+/** Primary 10% – divider, role dashboard bg */
+export const PRIMARY_10 = "#da1b611A";
+/** Primary 20% – avatar border */
+export const PRIMARY_20 = "#da1b6133";
 export const BACKGROUND_LIGHT = "#f8f6f7";
 export const BACKGROUND_DARK = "#211117";
+/** Sidebar / drawer background (cream) */
+export const CREAM = "#FFF8F6";
 /** Card/surface background – use for raised areas so they stand out from BACKGROUND_LIGHT */
 export const SURFACE = "#ffffff";
 /** Visible borders – use instead of very light opacity so UI doesn’t look flat */
