@@ -21,6 +21,13 @@ import {
 } from "@/store/features/auth";
 import { useAppDispatch } from "@/store/hooks";
 
+function normalizePhoneWithLeadingZero(phone?: string): string | undefined {
+  if (!phone) return undefined;
+  const digitsOnly = phone.replace(/\D/g, "");
+  if (!digitsOnly) return undefined;
+  return digitsOnly.startsWith("0") ? digitsOnly : `0${digitsOnly}`;
+}
+
 export default function RegisterScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
@@ -47,10 +54,13 @@ export default function RegisterScreen() {
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
       password: formData.password,
-      phone: formData.phone || undefined,
+      phone: normalizePhoneWithLeadingZero(formData.phone),
       photo: formData.photo,
       city: formData.city || undefined,
       address: formData.address || undefined,
+      country: formData.country || undefined,
+      latitude: formData.latitude ?? undefined,
+      longitude: formData.longitude ?? undefined,
       description: formData.description || undefined,
       role: selectedRole,
     };

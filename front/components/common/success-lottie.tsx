@@ -1,14 +1,13 @@
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import LottieView from "lottie-react-native";
+import successAnimation from "../../lottie/Success.json";
 
 const LottieAnimation = () => {
   return (
     <View style={styles.container}>
       <LottieView
-        source={{
-          uri: "https://lottie.host/eddaa166-e48b-462a-820d-9042b443cbae/0z39Wotybu.lottie"
-        }}
+        source={successAnimation}
         autoPlay
         loop
         style={styles.animation}

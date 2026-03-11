@@ -30,6 +30,30 @@ import {
   updateQuantity,
 } from "@/store/features/cart/cartSlice";
 import SuccessLottie from "@/components/common/success-lottie";
+import DateTimePickerSheet from "@/components/common/date-time-picker-sheet";
+
+function formatDateForInput(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function formatTimeForInput(date: Date): string {
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function formatDateDisplay(dateString: string): string {
+  const date = new Date(`${dateString}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    weekday: "short",
+  });
+}
 
 export default function ClientCartScreen() {
   const dispatch = useAppDispatch();
@@ -42,10 +66,17 @@ export default function ClientCartScreen() {
   const [isAddressPickerOpen, setIsAddressPickerOpen] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryAddressSource, setDeliveryAddressSource] = useState<
-    "profile" | "location" | ""
+    "profile" | "current_location" | ""
   >("");
   const [isLocating, setIsLocating] = useState(false);
   const [addressError, setAddressError] = useState<string | null>(null);
+  const [requestedDate, setRequestedDate] = useState(() =>
+    formatDateForInput(new Date())
+  );
+  const [requestedTime, setRequestedTime] = useState(() =>
+    formatTimeForInput(new Date())
+  );
+  const [isDateTimeSheetOpen, setIsDateTimeSheetOpen] = useState(false);
 
   const totals = useMemo(() => {
     const total = items.reduce(
@@ -63,6 +94,17 @@ export default function ClientCartScreen() {
     const parts = [user?.address, user?.city].filter(Boolean);
     return parts.join(", ");
   }, [user?.address, user?.city]);
+
+  useEffect(() => {
+    if (!profileAddress) return;
+    if (deliveryAddressSource === "current_location") return;
+
+    if (!deliveryAddress || deliveryAddressSource === "profile" || deliveryAddressSource === "") {
+      setDeliveryAddress(profileAddress);
+      setDeliveryAddressSource("profile");
+      setAddressError(null);
+    }
+  }, [profileAddress, deliveryAddress, deliveryAddressSource]);
 
   useEffect(() => {
     return () => {
@@ -129,7 +171,7 @@ export default function ClientCartScreen() {
         .join(", ");
 
       setDeliveryAddress(addressFromGps || "Current phone location");
-      setDeliveryAddressSource("location");
+      setDeliveryAddressSource("current_location");
       setIsAddressPickerOpen(false);
     } catch {
       setAddressError("Unable to fetch current location.");
@@ -348,7 +390,7 @@ export default function ClientCartScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.addressLabel}>
-                      {deliveryAddressSource === "location"
+                      {deliveryAddressSource === "current_location"
                         ? "Current Location"
                         : "Profile Address"}
                     </Text>
@@ -361,14 +403,14 @@ export default function ClientCartScreen() {
 
                 <Text style={styles.sectionTitle}>Requested Delivery</Text>
                 <View style={styles.deliveryGrid}>
-                  <View style={styles.deliveryInput}>
+                  <Pressable style={styles.deliveryInput} onPress={() => setIsDateTimeSheetOpen(true)}>
                     <Text style={styles.deliveryInputLabel}>Date</Text>
-                    <Text style={styles.deliveryInputValue}>Today</Text>
-                  </View>
-                  <View style={styles.deliveryInput}>
+                    <Text style={styles.deliveryInputValue}>{formatDateDisplay(requestedDate)}</Text>
+                  </Pressable>
+                  <Pressable style={styles.deliveryInput} onPress={() => setIsDateTimeSheetOpen(true)}>
                     <Text style={styles.deliveryInputLabel}>Time</Text>
-                    <Text style={styles.deliveryInputValue}>As soon as possible</Text>
-                  </View>
+                    <Text style={styles.deliveryInputValue}>{requestedTime}</Text>
+                  </Pressable>
                 </View>
 
                 <Text style={styles.sectionTitle}>Order Summary</Text>
@@ -451,6 +493,17 @@ export default function ClientCartScreen() {
             </View>
           </View>
         )}
+
+        <DateTimePickerSheet
+          visible={isDateTimeSheetOpen}
+          selectedDate={requestedDate}
+          selectedTime={requestedTime}
+          onClose={() => setIsDateTimeSheetOpen(false)}
+          onConfirm={(date, time) => {
+            setRequestedDate(date);
+            setRequestedTime(time);
+          }}
+        />
 
         {showSuccess && (
           <View style={styles.successOverlay} pointerEvents="none">

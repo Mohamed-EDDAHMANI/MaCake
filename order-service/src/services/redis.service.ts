@@ -33,14 +33,14 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.redis.on('connect', async () => {
       this.logger.log('Redis connected ✅');
       const serviceHost = process.env.SERVICE_HOST || 'orders-service';
-      const servicePort = Number(process.env.TCP_PORT) || 3004;
+      const servicePort = Number(process.env.TCP_PORT) || 3003;
       
       try {
         await this.registerServiceInfo(
           'orders-service',
           serviceHost,
           servicePort,
-          's4'
+          's3'
         );
       } catch (e) {
         this.logger.error(`Registration failed: ${e.message}`);

@@ -17,6 +17,9 @@ export interface RegisterFormData {
   photo: string | null;
   city: string;
   address: string;
+  country?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   description: string;
   // Role-specific (Patissiere)
   bio?: string;
@@ -33,6 +36,9 @@ export const DEFAULT_FORM_DATA: RegisterFormData = {
   photo: null,
   city: "",
   address: "",
+  country: "",
+  latitude: null,
+  longitude: null,
   description: "",
   bio: "",
   vehicleType: "",

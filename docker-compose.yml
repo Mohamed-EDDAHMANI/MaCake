@@ -192,9 +192,42 @@ services:
       RABBITMQ_CATALOG_QUEUE: catalog_queue
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      TCP_PORT: 3006
+      PORT: 3006
+      HOST: notation-service
+      CHOKIDAR_USEPOLLING: "true"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - macack-network
+    ports:
+      - "3006:3006"
+
+  payment-service:
+    build:
+      context: ./payment-service
+      dockerfile: Dockerfile
+    container_name: payment-service-dev
+    command: npm run start:dev
+    volumes:
+      - ./payment-service:/app
+      - /app/node_modules
+    environment:
+      MONGODB_URI: mongodb://root:password@mongodb:27017/payment_db?authSource=admin
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_PAYMENT_QUEUE: payment_queue
+      RABBITMQ_ORDERS_QUEUE: orders_queue
+      RABBITMQ_AUTH_QUEUE: auth_queue
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       TCP_PORT: 3005
       PORT: 3005
-      HOST: notation-service
+      HOST: payment-service
       CHOKIDAR_USEPOLLING: "true"
     depends_on:
       mongodb:
@@ -222,8 +255,8 @@ services:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      TCP_PORT: 3004
-      PORT: 3004
+      TCP_PORT: 3003
+      PORT: 3003
       HOST: order-service
       CHOKIDAR_USEPOLLING: "true"
     depends_on:
@@ -236,7 +269,7 @@ services:
     networks:
       - macack-network
     ports:
-      - "3004:3004"
+      - "3003:3003"
 
 volumes:
   mongodb_data_dev:

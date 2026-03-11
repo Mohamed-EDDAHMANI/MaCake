@@ -1,10 +1,34 @@
-import { IsNumber, IsString, IsArray, ArrayNotEmpty, ValidateNested, IsOptional } from "class-validator";
+import { IsNumber, IsString, IsArray, ArrayNotEmpty, ValidateNested, IsOptional, IsIn, IsDateString } from "class-validator";
 import { Type } from 'class-transformer';
 import { CreateOrderItemDto } from "../../order-item/dto/create-order-item.dto";
 
 export class CreateOrderDto {
 	@IsString()
-	userId: string;
+	clientId: string;
+
+	@IsString()
+	patissiereId: string;
+
+	@IsString()
+	patissiereAddress: string;
+
+	@IsString()
+	deliveryAddress: string;
+
+	@IsString()
+	@IsIn(['profile', 'current_location'])
+	deliveryAddressSource: 'profile' | 'current_location';
+
+	@IsOptional()
+	@IsNumber()
+	deliveryLatitude?: number;
+
+	@IsOptional()
+	@IsNumber()
+	deliveryLongitude?: number;
+
+	@IsDateString()
+	requestedDateTime: string;
 
 	@IsNumber()
 	@IsOptional()

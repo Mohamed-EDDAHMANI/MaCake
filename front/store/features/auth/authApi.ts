@@ -23,6 +23,9 @@ export interface RegisterPayload {
   photo?: string | null;
   city?: string;
   address?: string;
+  country?: string;
+  latitude?: number;
+  longitude?: number;
   description?: string;
   role?: UserRole;
   status?: "active" | "suspended";

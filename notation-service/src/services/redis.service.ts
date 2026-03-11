@@ -41,8 +41,8 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       await this.registerServiceInfo(
         'notation-service',
         process.env.HOST || 'notation-service',
-        Number(process.env.PORT) || 3005,
-        's5',
+        Number(process.env.PORT) || 3006,
+        's6',
       );
     });
 

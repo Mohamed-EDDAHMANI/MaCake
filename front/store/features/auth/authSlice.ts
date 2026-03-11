@@ -23,6 +23,9 @@ export interface AuthUser {
   phone?: string | null;
   city?: string | null;
   address?: string | null;
+  country?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   description?: string | null;
   /** Client only: from auth-service get-profile / login */
   walletBalance?: number;

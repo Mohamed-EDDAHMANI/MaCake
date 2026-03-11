@@ -91,12 +91,17 @@ export default function ProductDetailScreen() {
   const dispatch = useAppDispatch();
   const { showAuthModal } = useAuthModal();
   const user = useAppSelector((state) => state.auth.user);
+  const cartItems = useAppSelector((state) => state.cart.items);
   const productFromList = useAppSelector((state) =>
     state.catalog.products.find((p) => String(p.id) === String(id))
   );
   const selectedProduct = useAppSelector((state) => state.catalog.selectedProduct);
   const loading = useAppSelector((state) => state.catalog.selectedProductLoading);
   const error = useAppSelector((state) => state.catalog.selectedProductError);
+  const isProductInCart = useMemo(
+    () => cartItems.some((item) => String(item.productId) === String(id)),
+    [cartItems, id]
+  );
 
   const product = selectedProduct?.id === id ? selectedProduct : productFromList;
   const isLiked = user?.id && (product?.likedByUserIds ?? []).includes(user.id);
@@ -303,6 +308,8 @@ export default function ProductDetailScreen() {
     dispatch(
       addItem({
         productId: String(product.id),
+        patissiereId: product.patissiereId || product.patissiere?.id || undefined,
+        patissiereAddress: product.patissiere?.address || undefined,
         title: product.title,
         price: product.price ?? 0,
         quantity: 1,
@@ -328,6 +335,8 @@ export default function ProductDetailScreen() {
     dispatch(
       addItem({
         productId: String(product.id),
+        patissiereId: product.patissiereId || product.patissiere?.id || undefined,
+        patissiereAddress: product.patissiere?.address || undefined,
         title: product.title,
         price: totalPrice,
         quantity: 1,
@@ -643,9 +652,17 @@ export default function ProductDetailScreen() {
             {product.price != null ? `${product.price.toFixed(2)} MAD` : "—"}
           </Text>
         </View>
-        <Pressable style={styles.orderBtn} onPress={openCustomizer}>
-          <Text style={styles.orderBtnText}>Order Now</Text>
-          <MaterialIcons name="arrow-forward" size={20} color="#fff" />
+        <Pressable
+          style={[styles.orderBtn, isProductInCart && styles.orderBtnAdded]}
+          onPress={isProductInCart ? undefined : openCustomizer}
+          disabled={isProductInCart}
+        >
+          <Text style={styles.orderBtnText}>{isProductInCart ? "Added" : "Order Now"}</Text>
+          <MaterialIcons
+            name={isProductInCart ? "shopping-cart" : "arrow-forward"}
+            size={20}
+            color="#fff"
+          />
         </Pressable>
       </View>
 
@@ -1037,6 +1054,9 @@ const styles = StyleSheet.create({
       ios: { shadowColor: PRIMARY, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
       android: { elevation: 4 },
     }),
+  },
+  orderBtnAdded: {
+    backgroundColor: "#64748b",
   },
   orderBtnText: { fontSize: 16, fontWeight: "700", color: "#fff" },
 });

@@ -23,6 +23,21 @@ export class Order {
   @Prop({ type: String, required: true })
   patissiereId: string;
 
+  @Prop({ type: String, required: true })
+  patissiereAddress: string;
+
+  @Prop({ type: String, required: true })
+  deliveryAddress: string;
+
+  @Prop({ type: String, enum: ['profile', 'current_location'], required: true })
+  deliveryAddressSource: 'profile' | 'current_location';
+
+  @Prop({ type: Number, default: null })
+  deliveryLatitude: number | null;
+
+  @Prop({ type: Number, default: null })
+  deliveryLongitude: number | null;
+
   @Prop({ type: String, enum: Object.values(OrderStatus), default: OrderStatus.PENDING })
   status: OrderStatus;
 

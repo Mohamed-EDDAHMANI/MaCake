@@ -4,7 +4,6 @@ import { ConfigModule } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MessagingModule } from './messaging';
 import { winstonConfig } from './common/logger/logger.config';
 import { AllExceptionsFilter } from './common/exceptions';
 import { OrderModule } from './modules/order/order.module';
@@ -16,7 +15,6 @@ import { MongoDbModule } from './infrastructure/database/mongodb.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     WinstonModule.forRoot(winstonConfig),
-    MessagingModule,
     MongoDbModule,
     RedisModule, // Important: keep this
     OrderModule,

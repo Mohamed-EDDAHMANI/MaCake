@@ -17,6 +17,12 @@ export class OrderController {
     return this.orderService.create(createOrderDto);
   }
 
+  // Compatibility handler for gateway route style: /s3/order/create -> "order/create"
+  @MessagePattern('order/create')
+  createFromGatewayRoute(@ValidatedBody(CreateOrderDto) createOrderDto: CreateOrderDto) {
+    return this.orderService.create(createOrderDto);
+  }
+
   @MessagePattern(ORDERS_PATTERNS.ORDER_FIND_ALL)
   findAll(@Payload() payload: { user: { sub: string; role: string } }) {
     return this.orderService.findAll(payload.user.sub, payload.user.role);

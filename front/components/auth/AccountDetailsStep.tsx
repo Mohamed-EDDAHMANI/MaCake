@@ -15,10 +15,10 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
 import { PRIMARY, SLATE_200, SLATE_400, SLATE_500, SLATE_700, SURFACE, BORDER_SUBTLE, PRIMARY_TINT, TEXT_PRIMARY } from "@/constants/colors";
 import type { RegisterFormData, RegisterRole } from "@/types/register";
 import { fetchCountries, type CountryOption } from "@/lib/countries";
-import { fetchCities } from "@/lib/cities";
 
 interface AccountDetailsStepProps {
   formData: RegisterFormData;
@@ -50,6 +50,31 @@ const labelStyle = {
   marginBottom: 6,
 };
 
+type Region = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
+};
+
+type MapPressEvent = {
+  nativeEvent: {
+    coordinate: {
+      latitude: number;
+      longitude: number;
+    };
+  };
+};
+
+let MapsLib: any = null;
+try {
+  MapsLib = require("react-native-maps");
+} catch {
+  MapsLib = null;
+}
+const MapViewComponent = MapsLib?.default ?? null;
+const MarkerComponent = MapsLib?.Marker ?? null;
+
 export function AccountDetailsStep({
   formData,
   role,
@@ -61,14 +86,20 @@ export function AccountDetailsStep({
 }: AccountDetailsStepProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [photoUri, setPhotoUri] = useState<string | null>(formData.photo);
-  const [cityModalVisible, setCityModalVisible] = useState(false);
   const [countryModalVisible, setCountryModalVisible] = useState(false);
   const [countries, setCountries] = useState<CountryOption[]>([]);
   const [countrySearch, setCountrySearch] = useState("");
   const [countriesLoading, setCountriesLoading] = useState(false);
-  const [cities, setCities] = useState<string[]>([]);
-  const [citiesLoading, setCitiesLoading] = useState(false);
-  const [citySearch, setCitySearch] = useState("");
+  const [isLocating, setIsLocating] = useState(false);
+  const [isMapModalVisible, setIsMapModalVisible] = useState(false);
+  const [isResolvingMapAddress, setIsResolvingMapAddress] = useState(false);
+  const [mapRegion, setMapRegion] = useState<Region>({
+    latitude: 31.7917,
+    longitude: -7.0926,
+    latitudeDelta: 0.15,
+    longitudeDelta: 0.15,
+  });
+  const [mapPin, setMapPin] = useState<{ latitude: number; longitude: number } | null>(null);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [showLocalErrors, setShowLocalErrors] = useState(false);
 
@@ -95,6 +126,7 @@ export function AccountDetailsStep({
     }
     if (!formData.phone.trim()) errs.phone = "Phone number is required.";
     if (!formData.city) errs.city = "City is required.";
+    if (!formData.address) errs.address = "Address is required.";
 
     setLocalErrors(errs);
     setShowLocalErrors(true);
@@ -115,19 +147,6 @@ export function AccountDetailsStep({
     }
   }, [countryModalVisible, countries.length]);
 
-  useEffect(() => {
-    if (!cityModalVisible) return;
-    if (!formData.phoneCountry) return;
-
-    const key = formData.phoneCountry.name;
-    if (cities.length > 0) return;
-
-    setCitiesLoading(true);
-    fetchCities(formData.phoneCountry)
-      .then((list) => setCities(list))
-      .finally(() => setCitiesLoading(false));
-  }, [cityModalVisible, formData.phoneCountry, cities.length]);
-
   const filteredCountries = countrySearch.trim()
     ? countries.filter(
         (c) =>
@@ -136,12 +155,130 @@ export function AccountDetailsStep({
       )
     : countries;
 
-  const filteredCities = citySearch.trim()
-    ? cities.filter((c) => c.toLowerCase().includes(citySearch.toLowerCase()))
-    : cities;
-
   const handleChange = (field: keyof RegisterFormData, value: string | null) => {
     onChange({ [field]: value ?? "" });
+  };
+
+  const resolveAddressInFrench = async (latitude: number, longitude: number) => {
+    const url =
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}` +
+      `&accept-language=fr&addressdetails=1`;
+    const response = await fetch(url, {
+      headers: {
+        "Accept-Language": "fr-FR,fr;q=0.9",
+      },
+    });
+    // console.log('hello world');
+    if (!response.ok) {
+      // console.log('hello world ! ! !');
+      throw new Error("Reverse geocoding failed");
+    }
+
+    const data = (await response.json()) as {
+      display_name?: string;
+      address?: Record<string, string | undefined>;
+    };
+    // console.log(data.display_name);
+    // console.log(data.address);
+    const a = data.address ?? {};
+    const city = a.city || a.town || a.village || a.municipality || a.county || a.state || "";
+    const country = a.country || "";
+    const address = data.display_name || [a.road, a.suburb, city, country].filter(Boolean).join(", ");
+    // console.log(a.city || 'test');
+    // console.log("city: "+city);
+    // console.log("country: "+country);
+    // console.log("address: "+address);
+    return { city, country, address };
+  };
+
+  const fillLocationFromCoords = async (latitude: number, longitude: number) => {
+    try {
+      const fr = await resolveAddressInFrench(latitude, longitude);
+      // console.log("fr: "+fr.city);
+      // console.log("fr: "+fr.country);
+      // console.log("fr: "+fr.address);
+      onChange({
+        city: fr.city || "",
+        address: fr.address || "Localisation actuelle",
+        country: fr.country || "",
+        latitude,
+        longitude,
+      });
+    } catch {
+      const fallback = await Location.reverseGeocodeAsync({ latitude, longitude });
+      // console.log("fallback: "+fallback.toString());
+      const first = fallback[0];
+      const city = first?.city || first?.subregion || first?.region || "";
+      const country = first?.country || "";
+      const address = [first?.name, first?.street, first?.district, first?.city, first?.region]
+        .filter(Boolean)
+        .join(", ");
+      onChange({
+        city,
+        address: address || "Localisation actuelle",
+        country,
+        latitude,
+        longitude,
+      });
+    }
+  };
+
+  const handleUseCurrentLocation = async () => {
+    try {
+      setIsLocating(true);
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert("Location permission", "Please allow location access to auto-fill address.");
+        return;
+      }
+
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const latitude = current.coords.latitude;
+      const longitude = current.coords.longitude;
+      await fillLocationFromCoords(latitude, longitude);
+      setMapRegion((prev) => ({ ...prev, latitude, longitude }));
+      setMapPin({ latitude, longitude });
+    } catch {
+      Alert.alert("Location error", "Unable to fetch your current location.");
+    } finally {
+      setIsLocating(false);
+    }
+  };
+
+  const openMapPicker = () => {
+    if (!MapViewComponent || !MarkerComponent) {
+      Alert.alert(
+        "Map not available in Expo Go",
+        "To use the map picker, run a development build (expo run:android / expo run:ios). Current location still works."
+      );
+      return;
+    }
+
+    const latitude = formData.latitude ?? mapPin?.latitude ?? mapRegion.latitude;
+    const longitude = formData.longitude ?? mapPin?.longitude ?? mapRegion.longitude;
+    setMapRegion((prev) => ({ ...prev, latitude, longitude }));
+    setMapPin({ latitude, longitude });
+    setIsMapModalVisible(true);
+  };
+
+  const handleMapPress = (event: MapPressEvent) => {
+    const { latitude, longitude } = event.nativeEvent.coordinate;
+    setMapPin({ latitude, longitude });
+  };
+
+  const confirmMapLocation = async () => {
+    if (!mapPin) return;
+    try {
+      setIsResolvingMapAddress(true);
+      await fillLocationFromCoords(mapPin.latitude, mapPin.longitude);
+      setIsMapModalVisible(false);
+    } catch {
+      Alert.alert("Location error", "Unable to use selected map location.");
+    } finally {
+      setIsResolvingMapAddress(false);
+    }
   };
 
   /** Launch image picker (gallery) */
@@ -337,33 +474,87 @@ export function AccountDetailsStep({
             )}
           </View>
 
-          {/* City */}
-          <View>
-            <Text style={labelStyle}>City</Text>
+          {/* Location (auto-fill city + address + country + coordinates) */}
+          <View style={{ gap: 10 }}>
+            <Text style={labelStyle}>Location</Text>
             <Pressable
-              onPress={() => setCityModalVisible(true)}
-              style={[inputStyle, { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, fieldError("city") ? { borderColor: "#ef4444" } : {}]}
+              onPress={handleUseCurrentLocation}
+              disabled={isLocating}
+              style={{
+                height: 48,
+                borderRadius: 12,
+                backgroundColor: PRIMARY,
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 8,
+                opacity: isLocating ? 0.75 : 1,
+              }}
             >
-              <Text style={{ color: formData.city ? TEXT_PRIMARY : SLATE_400, fontSize: 16 }}>
-                {formData.city || "Select city"}
+              {isLocating ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <MaterialIcons name="my-location" size={18} color="#fff" />
+              )}
+              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
+                {isLocating ? "Detecting location..." : "Use current location"}
               </Text>
-              <MaterialIcons name="keyboard-arrow-down" size={24} color={SLATE_400} />
             </Pressable>
-            {fieldError("city") && (
-              <Text style={{ color: "#ef4444", fontSize: 12, marginTop: 4, marginLeft: 4 }}>{fieldError("city")}</Text>
-            )}
-          </View>
+            <Pressable
+              onPress={openMapPicker}
+              style={{
+                height: 48,
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: PRIMARY,
+                backgroundColor: `${PRIMARY}12`,
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "row",
+                gap: 8,
+              }}
+            >
+              <MaterialIcons name="map" size={18} color={PRIMARY} />
+              <Text style={{ color: PRIMARY, fontWeight: "700", fontSize: 15 }}>
+                Choose location from map
+              </Text>
+            </Pressable>
 
-          {/* Address */}
-          <View>
-            <Text style={labelStyle}>Address</Text>
-            <TextInput
-              style={inputStyle}
-              placeholder="Street, building, apt"
-              placeholderTextColor={SLATE_400}
-              value={formData.address}
-              onChangeText={(v) => handleChange("address", v)}
-            />
+            <View
+              style={{
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: fieldError("city") || fieldError("address") ? "#ef4444" : SLATE_200,
+                backgroundColor: SURFACE,
+                padding: 12,
+                gap: 8,
+              }}
+            >
+              <View>
+                <Text style={{ fontSize: 12, color: SLATE_500, marginBottom: 2 }}>Country</Text>
+                <Text style={{ fontSize: 15, color: formData.country ? TEXT_PRIMARY : SLATE_400 }}>
+                  {formData.country || "Not detected yet"}
+                </Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 12, color: SLATE_500, marginBottom: 2 }}>City</Text>
+                <Text style={{ fontSize: 15, color: formData.city ? TEXT_PRIMARY : SLATE_400 }}>
+                  {formData.city || "Not detected yet"}
+                </Text>
+              </View>
+              <View>
+                <Text style={{ fontSize: 12, color: SLATE_500, marginBottom: 2 }}>Address</Text>
+                <Text style={{ fontSize: 15, color: formData.address ? TEXT_PRIMARY : SLATE_400 }}>
+                  {formData.address || "Not detected yet"}
+                </Text>
+              </View>
+            </View>
+            {fieldError("city") && (
+              <Text style={{ color: "#ef4444", fontSize: 12, marginTop: -4, marginLeft: 4 }}>{fieldError("city")}</Text>
+            )}
+            {fieldError("address") && (
+              <Text style={{ color: "#ef4444", fontSize: 12, marginTop: -6, marginLeft: 4 }}>{fieldError("address")}</Text>
+            )}
           </View>
 
           {/* Description (optional) */}
@@ -538,10 +729,7 @@ export function AccountDetailsStep({
                 renderItem={({ item }) => (
                   <Pressable
                     onPress={() => {
-                      onChange({ phoneCountry: item, city: "" });
-                      setCities([]);
-                      setCitySearch("");
-                      setCityModalVisible(false);
+                      onChange({ phoneCountry: item });
                       setCountryModalVisible(false);
                     }}
                     className="py-4 px-4 flex-row items-center gap-3"
@@ -558,68 +746,93 @@ export function AccountDetailsStep({
         </Pressable>
       </Modal>
 
-      {/* City picker modal */}
       <Modal
-        visible={cityModalVisible}
-        transparent
+        visible={isMapModalVisible}
         animationType="slide"
-        onRequestClose={() => setCityModalVisible(false)}
+        onRequestClose={() => setIsMapModalVisible(false)}
       >
-        <Pressable
-          className="flex-1 justify-end bg-black/40"
-          onPress={() => setCityModalVisible(false)}
-        >
-          <Pressable
-            className="bg-white rounded-t-2xl"
-            style={{ maxHeight: "80%" }}
-            onPress={(e) => e.stopPropagation()}
+        <View style={{ flex: 1, backgroundColor: SURFACE }}>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              paddingHorizontal: 12,
+              paddingVertical: 10,
+              borderBottomWidth: 1,
+              borderBottomColor: BORDER_SUBTLE,
+            }}
           >
-            <View className="py-3 px-4 border-b" style={{ borderColor: SLATE_200 }}>
-              <Text className="text-center font-semibold text-slate-900 mb-3">Select city</Text>
-              <TextInput
-                placeholder="Search city..."
-                placeholderTextColor={SLATE_400}
-                value={citySearch}
-                onChangeText={setCitySearch}
-                className="rounded-lg border px-3 py-2 text-base"
-                style={{ borderColor: SLATE_200 }}
-              />
+            <Pressable onPress={() => setIsMapModalVisible(false)} hitSlop={10}>
+              <MaterialIcons name="arrow-back" size={24} color={TEXT_PRIMARY} />
+            </Pressable>
+            <Text style={{ fontSize: 16, fontWeight: "700", color: TEXT_PRIMARY }}>
+              Choose on map
+            </Text>
+            <View style={{ width: 24 }} />
+          </View>
+
+          {MapViewComponent ? (
+            <MapViewComponent
+              style={{ flex: 1 }}
+              initialRegion={mapRegion}
+              region={mapRegion}
+              onRegionChangeComplete={setMapRegion}
+              onPress={handleMapPress}
+            >
+              {mapPin && MarkerComponent ? <MarkerComponent coordinate={mapPin} /> : null}
+            </MapViewComponent>
+          ) : (
+            <View
+              style={{
+                flex: 1,
+                alignItems: "center",
+                justifyContent: "center",
+                paddingHorizontal: 22,
+              }}
+            >
+              <MaterialIcons name="map" size={44} color={SLATE_400} />
+              <Text style={{ marginTop: 10, textAlign: "center", color: SLATE_500 }}>
+                Map module is not available in this runtime. Build a dev client to enable map picker.
+              </Text>
             </View>
-            {citiesLoading ? (
-              <View className="py-12 items-center">
-                <ActivityIndicator size="large" color={PRIMARY} />
-                <Text className="mt-3 text-slate-500">Loading cities...</Text>
-              </View>
-            ) : cities.length === 0 ? (
-              <View className="py-6 px-4">
-                <Text className="text-center text-slate-500">
-                  {formData.phoneCountry
-                    ? "No cities found for this country."
-                    : "Please select a country first."}
+          )}
+
+          <View
+            style={{
+              paddingHorizontal: 16,
+              paddingTop: 12,
+              paddingBottom: 20,
+              gap: 10,
+              borderTopWidth: 1,
+              borderTopColor: BORDER_SUBTLE,
+            }}
+          >
+            <Text style={{ fontSize: 13, color: SLATE_500 }}>
+              Tap the map to place the marker, then confirm.
+            </Text>
+            <Pressable
+              onPress={confirmMapLocation}
+              disabled={!mapPin || isResolvingMapAddress}
+              style={{
+                height: 48,
+                borderRadius: 12,
+                backgroundColor: PRIMARY,
+                alignItems: "center",
+                justifyContent: "center",
+                opacity: !mapPin || isResolvingMapAddress ? 0.65 : 1,
+              }}
+            >
+              {isResolvingMapAddress ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>
+                  Confirm selected location
                 </Text>
-              </View>
-            ) : (
-              <FlatList
-                data={filteredCities}
-                keyExtractor={(item) => item}
-                keyboardShouldPersistTaps="handled"
-                renderItem={({ item }) => (
-                  <Pressable
-                    onPress={() => {
-                      handleChange("city", item);
-                      setCitySearch("");
-                      setCityModalVisible(false);
-                    }}
-                    className="py-4 px-4"
-                    style={({ pressed }) => ({ backgroundColor: pressed ? BORDER_SUBTLE : SURFACE })}
-                  >
-                    <Text className="text-base text-slate-900">{item}</Text>
-                  </Pressable>
-                )}
-              />
-            )}
-          </Pressable>
-        </Pressable>
+              )}
+            </Pressable>
+          </View>
+        </View>
       </Modal>
     </KeyboardAvoidingView>
   );

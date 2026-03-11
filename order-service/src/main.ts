@@ -18,7 +18,7 @@ async function bootstrap() {
     transport: Transport.TCP,
     options: {
       host: '0.0.0.0',
-      port: config.get<number>('TCP_PORT', 3004),
+      port: config.get<number>('TCP_PORT', 3003),
     },
   });
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -19,6 +19,31 @@ import {
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { clearCart as clearCartAction } from "@/store/features/cart/cartSlice";
 import OrderSuccessPopup from "@/components/product-detail/OrderSuccessPopup";
+import { createOrderApi } from "@/store/features/order/orderApi";
+import DateTimePickerSheet from "@/components/common/date-time-picker-sheet";
+
+function formatDateForInput(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function formatTimeForInput(date: Date): string {
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+function formatDateDisplay(dateString: string): string {
+  const date = new Date(`${dateString}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return dateString;
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "2-digit",
+    weekday: "short",
+  });
+}
 
 export default function CheckoutScreen() {
   const router = useRouter();
@@ -29,11 +54,18 @@ export default function CheckoutScreen() {
   const [isAddressPickerOpen, setIsAddressPickerOpen] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState("");
   const [deliveryAddressSource, setDeliveryAddressSource] = useState<
-    "profile" | "location" | ""
+    "profile" | "current_location" | ""
   >("");
+  const [deliveryLatitude, setDeliveryLatitude] = useState<number | null>(null);
+  const [deliveryLongitude, setDeliveryLongitude] = useState<number | null>(null);
+  const [requestedDate, setRequestedDate] = useState(() => formatDateForInput(new Date()));
+  const [requestedTime, setRequestedTime] = useState(() => formatTimeForInput(new Date()));
+  const [isDateTimeSheetOpen, setIsDateTimeSheetOpen] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [addressError, setAddressError] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<"wallet" | "card">(
     "wallet"
@@ -55,6 +87,19 @@ export default function CheckoutScreen() {
     return parts.join(", ");
   }, [user?.address, user?.city]);
 
+  useEffect(() => {
+    if (!profileAddress) return;
+    if (deliveryAddressSource === "current_location") return;
+
+    if (!deliveryAddress || deliveryAddressSource === "profile" || deliveryAddressSource === "") {
+      setDeliveryAddress(profileAddress);
+      setDeliveryAddressSource("profile");
+      setDeliveryLatitude(user?.latitude ?? null);
+      setDeliveryLongitude(user?.longitude ?? null);
+      setAddressError(null);
+    }
+  }, [profileAddress, deliveryAddress, deliveryAddressSource, user?.latitude, user?.longitude]);
+
   const useProfileAddress = () => {
     if (!profileAddress) {
       setAddressError("Please add your address in profile first.");
@@ -62,6 +107,8 @@ export default function CheckoutScreen() {
     }
     setDeliveryAddress(profileAddress);
     setDeliveryAddressSource("profile");
+    setDeliveryLatitude(user?.latitude ?? null);
+    setDeliveryLongitude(user?.longitude ?? null);
     setAddressError(null);
     setIsAddressPickerOpen(false);
   };
@@ -88,7 +135,9 @@ export default function CheckoutScreen() {
         .filter(Boolean)
         .join(", ");
       setDeliveryAddress(value || "Current phone location");
-      setDeliveryAddressSource("location");
+      setDeliveryAddressSource("current_location");
+      setDeliveryLatitude(pos.coords.latitude);
+      setDeliveryLongitude(pos.coords.longitude);
       setIsAddressPickerOpen(false);
     } catch {
       setAddressError("Unable to get current location.");
@@ -97,9 +146,23 @@ export default function CheckoutScreen() {
     }
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
     if (!deliveryAddress.trim()) {
       setAddressError("Please choose your delivery address.");
+      return;
+    }
+    const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(requestedDate.trim());
+    const timeOk = /^\d{2}:\d{2}$/.test(requestedTime.trim());
+    if (!dateOk || !timeOk) {
+      setAddressError("Please enter a valid date and time.");
+      return;
+    }
+    if (!deliveryAddressSource) {
+      setAddressError("Please choose address source.");
+      return;
+    }
+    if (!user?.id) {
+      setOrderError("Please login before placing an order.");
       return;
     }
     if (selectedPaymentMethod === "card") {
@@ -114,12 +177,59 @@ export default function CheckoutScreen() {
       }
     }
     setPaymentError(null);
-    dispatch(clearCartAction());
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      router.replace("/(main)/(tabs)/orders");
-    }, 1400);
+    setOrderError(null);
+    setIsPlacingOrder(true);
+
+    try {
+      const patissiereIds = Array.from(
+        new Set(items.map((item) => item.patissiereId).filter(Boolean))
+      ) as string[];
+      if (patissiereIds.length !== 1) {
+        setOrderError("All cart items must belong to one patissiere.");
+        return;
+      }
+      const patissiereId = patissiereIds[0];
+      const patissiereAddress =
+        items.find((item) => item.patissiereId === patissiereId)?.patissiereAddress ||
+        "Patissiere address unavailable";
+
+      await createOrderApi({
+        clientId: user.id,
+        patissiereId,
+        patissiereAddress,
+        totalPrice: totals.total,
+        deliveryAddress,
+        deliveryAddressSource,
+        deliveryLatitude: deliveryLatitude ?? undefined,
+        deliveryLongitude: deliveryLongitude ?? undefined,
+        requestedDateTime: `${requestedDate}T${requestedTime}:00`,
+        items: items.map((item) => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          priceAtPurchase: item.price,
+          customizationDetails: {
+            colors: item.colors,
+            garniture: item.garnish,
+            message: item.message,
+          },
+        })),
+      });
+
+      dispatch(clearCartAction());
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        router.replace("/(main)/(tabs)/orders");
+      }, 1400);
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to create order. Please try again.";
+      setOrderError(message);
+    } finally {
+      setIsPlacingOrder(false);
+    }
   };
 
   const onCardNumberChange = (value: string) => {
@@ -182,7 +292,9 @@ export default function CheckoutScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.addressTitle}>
-                  {deliveryAddressSource === "location" ? "Current Location" : "Home (Default)"}
+                  {deliveryAddressSource === "current_location"
+                    ? "Current Location"
+                    : "Home (Default)"}
                 </Text>
                 <Text style={styles.addressText}>
                   {deliveryAddress || profileAddress || "Please select an address"}
@@ -195,14 +307,14 @@ export default function CheckoutScreen() {
           <View>
             <Text style={styles.sectionTitle}>Requested Delivery</Text>
             <View style={styles.deliveryGrid}>
-              <View style={styles.deliveryInput}>
+              <Pressable style={styles.deliveryInput} onPress={() => setIsDateTimeSheetOpen(true)}>
                 <Text style={styles.deliveryLabel}>Date</Text>
-                <Text style={styles.deliveryValue}>Today</Text>
-              </View>
-              <View style={styles.deliveryInput}>
+                <Text style={styles.deliveryTextInput}>{formatDateDisplay(requestedDate)}</Text>
+              </Pressable>
+              <Pressable style={styles.deliveryInput} onPress={() => setIsDateTimeSheetOpen(true)}>
                 <Text style={styles.deliveryLabel}>Time</Text>
-                <Text style={styles.deliveryValue}>06:30 PM</Text>
-              </View>
+                <Text style={styles.deliveryTextInput}>{requestedTime}</Text>
+              </Pressable>
             </View>
           </View>
 
@@ -318,6 +430,7 @@ export default function CheckoutScreen() {
                 </View>
               )}
               {paymentError ? <Text style={styles.errorText}>{paymentError}</Text> : null}
+              {orderError ? <Text style={styles.errorText}>{orderError}</Text> : null}
             </View>
           </View>
         </ScrollView>
@@ -335,8 +448,14 @@ export default function CheckoutScreen() {
             <Text style={styles.totalMainLabel}>Total</Text>
             <Text style={styles.totalMainValue}>{totals.total.toFixed(0)} MAD</Text>
           </View>
-          <Pressable style={styles.placeBtn} onPress={handlePlaceOrder}>
-            <Text style={styles.placeBtnText}>Place Order</Text>
+          <Pressable
+            style={[styles.placeBtn, isPlacingOrder && { opacity: 0.7 }]}
+            onPress={handlePlaceOrder}
+            disabled={isPlacingOrder}
+          >
+            <Text style={styles.placeBtnText}>
+              {isPlacingOrder ? "Placing..." : "Place Order"}
+            </Text>
             <MaterialIcons name="arrow-forward" size={20} color="#fff" />
           </Pressable>
         </View>
@@ -370,6 +489,17 @@ export default function CheckoutScreen() {
             </View>
           </View>
         )}
+
+        <DateTimePickerSheet
+          visible={isDateTimeSheetOpen}
+          selectedDate={requestedDate}
+          selectedTime={requestedTime}
+          onClose={() => setIsDateTimeSheetOpen(false)}
+          onConfirm={(date, time) => {
+            setRequestedDate(date);
+            setRequestedTime(time);
+          }}
+        />
 
         <OrderSuccessPopup visible={showSuccess} message="Order created successfully" />
       </View>
@@ -428,6 +558,12 @@ const styles = StyleSheet.create({
   },
   deliveryLabel: { fontSize: 12, color: SLATE_500, marginBottom: 3 },
   deliveryValue: { fontSize: 14, color: TEXT_PRIMARY, fontWeight: "600" },
+  deliveryTextInput: {
+    fontSize: 14,
+    color: TEXT_PRIMARY,
+    fontWeight: "600",
+    paddingVertical: 0,
+  },
   summaryCard: {
     backgroundColor: "#fff",
     borderRadius: 12,
