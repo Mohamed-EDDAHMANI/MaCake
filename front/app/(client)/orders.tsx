@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
@@ -14,63 +15,30 @@ import {
   SURFACE,
   TEXT_PRIMARY,
 } from "@/constants/colors";
+import { getClientOrdersApi, getPatissiereOrdersApi, type ClientOrder } from "@/store/features/order/orderApi";
+import { useAppSelector } from "@/store/hooks";
 
 type OrderStatus = "pending" | "accepted" | "preparing" | "delivering" | "delivered" | "refused";
-type OrderSource = "profile" | "current_location";
-
-type OrderCardData = {
-  id: string;
+type OrderCardData = ClientOrder & {
   title: string;
   chefName: string;
-  imageUri: string;
-  status: OrderStatus;
-  totalPrice: number;
-  requestedDateTime: string;
-  deliveryAddress: string;
-  deliveryAddressSource: OrderSource;
-  createdAt: string;
+  imageUri?: string;
+  requestedDateTimeText: string;
 };
 
-const MOCK_ORDERS: OrderCardData[] = [
-  {
-    id: "ord_9f1a",
-    title: "Boutique Chocolate Fondant",
-    chefName: "Chef Clara Bloom",
-    imageUri:
-      "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=500&auto=format&fit=crop",
-    status: "pending",
-    totalPrice: 45,
-    requestedDateTime: "2026-03-11T15:30:00.000Z",
-    deliveryAddress: "Talborjt, Agadir",
-    deliveryAddressSource: "profile",
-    createdAt: "2026-03-11T10:04:00.000Z",
-  },
-  {
-    id: "ord_61bc",
-    title: "Velvet Berry Cheesecake",
-    chefName: "Chef Marc Pastry",
-    imageUri:
-      "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=500&auto=format&fit=crop",
-    status: "delivered",
-    totalPrice: 32.5,
-    requestedDateTime: "2026-03-09T11:30:00.000Z",
-    deliveryAddress: "Hay Salam, Agadir",
-    deliveryAddressSource: "current_location",
-    createdAt: "2026-03-08T17:44:00.000Z",
-  },
-  {
-    id: "ord_35de",
-    title: "Glazed Luxury Tower",
-    chefName: "Sweets by Sofia",
-    imageUri:
-      "https://images.unsplash.com/photo-1559622214-4d6f51b0a8f5?q=80&w=500&auto=format&fit=crop",
-    status: "delivered",
-    totalPrice: 58,
-    requestedDateTime: "2026-03-03T12:00:00.000Z",
-    deliveryAddress: "Inezgane, Agadir",
-    deliveryAddressSource: "profile",
-    createdAt: "2026-03-02T19:10:00.000Z",
-  },
+const STATUS_PRIORITY: Record<OrderStatus, number> = {
+  pending: 0,
+  accepted: 1,
+  preparing: 2,
+  delivering: 3,
+  delivered: 4,
+  refused: 5,
+};
+
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=500&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?q=80&w=500&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1559622214-4d6f51b0a8f5?q=80&w=500&auto=format&fit=crop",
 ];
 
 const statusMap: Record<OrderStatus, { bg: string; text: string; label: string }> = {
@@ -88,15 +56,114 @@ function formatDate(value: string): string {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
+function formatDateTime(value: string): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return `${d.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+  })} • ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+}
+
+function buildUiTitle(order: ClientOrder): string {
+  if (order.items.length === 0) return `Order #${order.id.slice(-6)}`;
+  const first = order.items[0];
+  if (order.items.length === 1) return `Product ${first.productId.slice(-6)}`;
+  return `Product ${first.productId.slice(-6)} +${order.items.length - 1}`;
+}
+
+function orderToCard(order: ClientOrder, index: number): OrderCardData {
+  return {
+    ...order,
+    title: buildUiTitle(order),
+    chefName: order.patissiereAddress || `Patissiere ${order.patissiereId.slice(-6)}`,
+    imageUri: FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
+    requestedDateTimeText: formatDateTime(order.requestedDateTime),
+  };
+}
+
 export default function ClientOrdersScreen() {
+  const router = useRouter();
+  const authUserId = useAppSelector((state) => state.auth.user?.id ?? "");
+  const authRole = (useAppSelector((state) => state.auth.user?.role) ?? "").toLowerCase();
+  const isPatissiere = authRole === "patissiere";
+  const [orders, setOrders] = useState<OrderCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = isPatissiere ? await getPatissiereOrdersApi() : await getClientOrdersApi();
+        if (!mounted) return;
+        setOrders(data.map(orderToCard));
+      } catch (e: any) {
+        if (!mounted) return;
+        const msg = e?.response?.data?.message || e?.message || "Failed to load orders.";
+        setError(msg);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, [isPatissiere]);
+
   const ongoing = useMemo(
-    () => MOCK_ORDERS.filter((o) => ["pending", "accepted", "preparing", "delivering"].includes(o.status)),
-    []
+    () =>
+      orders
+        .filter((o) => ["pending", "accepted", "preparing", "delivering"].includes(o.status))
+        .sort((a, b) => STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status]),
+    [orders]
   );
   const history = useMemo(
-    () => MOCK_ORDERS.filter((o) => ["delivered", "refused"].includes(o.status)),
-    []
+    () =>
+      orders
+        .filter((o) => ["delivered", "refused"].includes(o.status))
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [orders]
   );
+  const patissiereAsClientOrders = useMemo(
+    () =>
+      orders
+        .filter((o) => o.clientId === authUserId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [orders, authUserId]
+  );
+  const patissiereIncomingOrders = useMemo(
+    () =>
+      orders
+        .filter((o) => o.patissiereId === authUserId)
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
+    [orders, authUserId]
+  );
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.loadingWrap}>
+          <MaterialIcons name="hourglass-empty" size={22} color={SLATE_400} />
+          <Text style={styles.loadingText}>Loading your orders...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (error) {
+    return (
+      <SafeAreaView style={styles.safe} edges={["top"]}>
+        <View style={styles.loadingWrap}>
+          <MaterialIcons name="error-outline" size={24} color="#b91c1c" />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -111,29 +178,96 @@ export default function ClientOrdersScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Ongoing Orders</Text>
-          {ongoing.length ? (
-            ongoing.map((order) => <OrderCard key={order.id} order={order} />)
-          ) : (
-            <Text style={styles.emptyText}>No ongoing orders right now.</Text>
-          )}
-        </View>
+        {isPatissiere ? (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>My Purchase Orders</Text>
+              {patissiereAsClientOrders.length ? (
+                patissiereAsClientOrders.map((order) => (
+                  <OrderCard
+                    key={`buy-${order.id}`}
+                    order={order}
+                    history={["delivered", "refused"].includes(order.status)}
+                    onViewDetails={() =>
+                      router.push({ pathname: "/(main)/order/[id]", params: { id: order.id } } as any)
+                    }
+                  />
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No purchase orders yet.</Text>
+              )}
+            </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Order History</Text>
-          {history.length ? (
-            history.map((order) => <OrderCard key={order.id} order={order} history />)
-          ) : (
-            <Text style={styles.emptyText}>No delivered orders yet.</Text>
-          )}
-        </View>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Orders To Prepare</Text>
+              {patissiereIncomingOrders.length ? (
+                patissiereIncomingOrders.map((order) => (
+                  <OrderCard
+                    key={`prepare-${order.id}`}
+                    order={order}
+                    history={["delivered", "refused"].includes(order.status)}
+                    onViewDetails={() =>
+                      router.push({ pathname: "/(main)/order/[id]", params: { id: order.id } } as any)
+                    }
+                  />
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No incoming orders to prepare.</Text>
+              )}
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Ongoing Orders</Text>
+              {ongoing.length ? (
+                ongoing.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    onViewDetails={() =>
+                      router.push({ pathname: "/(main)/order/[id]", params: { id: order.id } } as any)
+                    }
+                  />
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No ongoing orders right now.</Text>
+              )}
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Order History</Text>
+              {history.length ? (
+                history.map((order) => (
+                  <OrderCard
+                    key={order.id}
+                    order={order}
+                    history
+                    onViewDetails={() =>
+                      router.push({ pathname: "/(main)/order/[id]", params: { id: order.id } } as any)
+                    }
+                  />
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No delivered orders yet.</Text>
+              )}
+            </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function OrderCard({ order, history = false }: { order: OrderCardData; history?: boolean }) {
+function OrderCard({
+  order,
+  history = false,
+  onViewDetails,
+}: {
+  order: OrderCardData;
+  history?: boolean;
+  onViewDetails: () => void;
+}) {
   const status = statusMap[order.status];
   return (
     <View style={[styles.card, history && styles.cardHistory]}>
@@ -152,6 +286,7 @@ function OrderCard({ order, history = false }: { order: OrderCardData; history?:
           <Text style={styles.meta}>
             {order.totalPrice.toFixed(2)} EUR • {formatDate(order.createdAt)}
           </Text>
+          <Text style={styles.meta}>{order.requestedDateTimeText}</Text>
           <Text style={styles.meta} numberOfLines={1}>
             {order.deliveryAddressSource === "profile" ? "Profile address" : "Current location"} •{" "}
             {order.deliveryAddress}
@@ -160,9 +295,9 @@ function OrderCard({ order, history = false }: { order: OrderCardData; history?:
       </View>
 
       <View style={styles.actionRow}>
-        <Pressable style={[styles.mainBtn, history && styles.secondaryBtn]}>
+        <Pressable style={[styles.mainBtn, history && styles.secondaryBtn]} onPress={onViewDetails}>
           <Text style={[styles.mainBtnText, history && styles.secondaryBtnText]}>
-            {history ? "Order Again" : "View Details"}
+            View Details
           </Text>
         </Pressable>
         <Pressable style={styles.reviewBtn}>
@@ -265,4 +400,7 @@ const styles = StyleSheet.create({
     borderColor: `${PRIMARY}22`,
   },
   reviewBtnText: { color: PRIMARY, fontSize: 12, fontWeight: "800" },
+  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
+  loadingText: { color: SLATE_500, fontSize: 13, fontWeight: "600" },
+  errorText: { color: "#b91c1c", fontSize: 13, fontWeight: "600", textAlign: "center" },
 });

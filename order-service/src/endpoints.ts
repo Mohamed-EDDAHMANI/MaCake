@@ -6,11 +6,15 @@ export const ORDERS_ENDPOINTS = [
   },
   {
     pattern: /^\/orders\/find-all$/,
-    roles: ['admin'],
+    roles: ['client', 'patissiere', 'admin'],
   },
   {
     pattern: /^\/order\/find-one\/.*$/, // Matches /order/find-one/:id
-    roles: ['client', 'admin'],
+    roles: ['client', 'patissiere', 'admin'],
+  },
+  {
+    pattern: /^\/orders\/patissiere\/find-all$/,
+    roles: ['patissiere', 'admin'],
   },
   {
     pattern: /^\/order\/update\/.*$/, // Matches /order/update/:id

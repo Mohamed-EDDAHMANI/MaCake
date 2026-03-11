@@ -3,6 +3,7 @@
 export const ORDERS_PATTERNS = {
   ORDER_CREATE: 'orders/create-order',
   ORDER_FIND_ALL: 'orders/find-all',
+  ORDER_FIND_PATISSIERE: 'orders/patissiere/find-all',
   ORDER_FIND_ONE: 'orders/find-one',
   ORDER_REMOVE: 'orders/remove',
   ORDER_ITEM_CREATE: 'orders/order-item/create',

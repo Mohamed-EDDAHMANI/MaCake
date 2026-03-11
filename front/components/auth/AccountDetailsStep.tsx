@@ -16,6 +16,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
+import { WebView } from "react-native-webview";
 import { PRIMARY, SLATE_200, SLATE_400, SLATE_500, SLATE_700, SURFACE, BORDER_SUBTLE, PRIMARY_TINT, TEXT_PRIMARY } from "@/constants/colors";
 import type { RegisterFormData, RegisterRole } from "@/types/register";
 import { fetchCountries, type CountryOption } from "@/lib/countries";
@@ -50,30 +51,56 @@ const labelStyle = {
   marginBottom: 6,
 };
 
-type Region = {
-  latitude: number;
-  longitude: number;
-  latitudeDelta: number;
-  longitudeDelta: number;
-};
+const OSM_DEFAULT_COORDS = { latitude: 31.7917, longitude: -7.0926 };
 
-type MapPressEvent = {
-  nativeEvent: {
-    coordinate: {
-      latitude: number;
-      longitude: number;
-    };
-  };
-};
+const buildOsmPickerHtml = (centerLat: number, centerLng: number, markerLat?: number, markerLng?: number) => `
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+      html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #ffffff; }
+      .hint { position: fixed; left: 12px; right: 12px; top: 12px; z-index: 9999; background: rgba(255,255,255,.96); border-radius: 10px; padding: 8px 10px; font: 12px sans-serif; color: #334155; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+    </style>
+  </head>
+  <body>
+    <div class="hint">Tap map to choose location (OpenStreetMap)</div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      const center = [${centerLat}, ${centerLng}];
+      const map = L.map('map', { zoomControl: true }).setView(center, 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(map);
 
-let MapsLib: any = null;
-try {
-  MapsLib = require("react-native-maps");
-} catch {
-  MapsLib = null;
-}
-const MapViewComponent = MapsLib?.default ?? null;
-const MarkerComponent = MapsLib?.Marker ?? null;
+      let marker = null;
+      const initialLat = ${markerLat ?? "null"};
+      const initialLng = ${markerLng ?? "null"};
+      if (initialLat !== null && initialLng !== null) {
+        marker = L.marker([initialLat, initialLng]).addTo(map);
+      }
+
+      function send(lat, lng) {
+        if (window.ReactNativeWebView) {
+          window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'pick', latitude: lat, longitude: lng }));
+        }
+      }
+
+      map.on('click', function (e) {
+        const lat = e.latlng.lat;
+        const lng = e.latlng.lng;
+        if (!marker) marker = L.marker([lat, lng]).addTo(map);
+        else marker.setLatLng([lat, lng]);
+        send(lat, lng);
+      });
+    </script>
+  </body>
+</html>
+`;
 
 export function AccountDetailsStep({
   formData,
@@ -93,12 +120,7 @@ export function AccountDetailsStep({
   const [isLocating, setIsLocating] = useState(false);
   const [isMapModalVisible, setIsMapModalVisible] = useState(false);
   const [isResolvingMapAddress, setIsResolvingMapAddress] = useState(false);
-  const [mapRegion, setMapRegion] = useState<Region>({
-    latitude: 31.7917,
-    longitude: -7.0926,
-    latitudeDelta: 0.15,
-    longitudeDelta: 0.15,
-  });
+  const [mapCenter, setMapCenter] = useState(OSM_DEFAULT_COORDS);
   const [mapPin, setMapPin] = useState<{ latitude: number; longitude: number } | null>(null);
   const [localErrors, setLocalErrors] = useState<Record<string, string>>({});
   const [showLocalErrors, setShowLocalErrors] = useState(false);
@@ -238,7 +260,7 @@ export function AccountDetailsStep({
       const latitude = current.coords.latitude;
       const longitude = current.coords.longitude;
       await fillLocationFromCoords(latitude, longitude);
-      setMapRegion((prev) => ({ ...prev, latitude, longitude }));
+      setMapCenter({ latitude, longitude });
       setMapPin({ latitude, longitude });
     } catch {
       Alert.alert("Location error", "Unable to fetch your current location.");
@@ -248,24 +270,24 @@ export function AccountDetailsStep({
   };
 
   const openMapPicker = () => {
-    if (!MapViewComponent || !MarkerComponent) {
-      Alert.alert(
-        "Map not available in Expo Go",
-        "To use the map picker, run a development build (expo run:android / expo run:ios). Current location still works."
-      );
-      return;
-    }
-
-    const latitude = formData.latitude ?? mapPin?.latitude ?? mapRegion.latitude;
-    const longitude = formData.longitude ?? mapPin?.longitude ?? mapRegion.longitude;
-    setMapRegion((prev) => ({ ...prev, latitude, longitude }));
+    const latitude = formData.latitude ?? mapPin?.latitude ?? mapCenter.latitude;
+    const longitude = formData.longitude ?? mapPin?.longitude ?? mapCenter.longitude;
+    setMapCenter({ latitude, longitude });
     setMapPin({ latitude, longitude });
     setIsMapModalVisible(true);
   };
 
-  const handleMapPress = (event: MapPressEvent) => {
-    const { latitude, longitude } = event.nativeEvent.coordinate;
-    setMapPin({ latitude, longitude });
+  const handleMapWebMessage = (raw: string) => {
+    try {
+      const payload = JSON.parse(raw) as { type?: string; latitude?: number; longitude?: number };
+      if (payload.type !== "pick") return;
+      if (typeof payload.latitude !== "number" || typeof payload.longitude !== "number") return;
+      const next = { latitude: payload.latitude, longitude: payload.longitude };
+      setMapPin(next);
+      setMapCenter(next);
+    } catch {
+      // Ignore malformed webview messages
+    }
   };
 
   const confirmMapLocation = async () => {
@@ -772,31 +794,21 @@ export function AccountDetailsStep({
             <View style={{ width: 24 }} />
           </View>
 
-          {MapViewComponent ? (
-            <MapViewComponent
-              style={{ flex: 1 }}
-              initialRegion={mapRegion}
-              region={mapRegion}
-              onRegionChangeComplete={setMapRegion}
-              onPress={handleMapPress}
-            >
-              {mapPin && MarkerComponent ? <MarkerComponent coordinate={mapPin} /> : null}
-            </MapViewComponent>
-          ) : (
-            <View
-              style={{
-                flex: 1,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingHorizontal: 22,
-              }}
-            >
-              <MaterialIcons name="map" size={44} color={SLATE_400} />
-              <Text style={{ marginTop: 10, textAlign: "center", color: SLATE_500 }}>
-                Map module is not available in this runtime. Build a dev client to enable map picker.
-              </Text>
-            </View>
-          )}
+          <WebView
+            style={{ flex: 1 }}
+            originWhitelist={["*"]}
+            source={{
+              html: buildOsmPickerHtml(
+                mapCenter.latitude,
+                mapCenter.longitude,
+                mapPin?.latitude,
+                mapPin?.longitude
+              ),
+            }}
+            onMessage={(event) => handleMapWebMessage(event.nativeEvent.data)}
+            javaScriptEnabled
+            domStorageEnabled
+          />
 
           <View
             style={{
@@ -809,7 +821,7 @@ export function AccountDetailsStep({
             }}
           >
             <Text style={{ fontSize: 13, color: SLATE_500 }}>
-              Tap the map to place the marker, then confirm.
+              Tap the OpenStreetMap map to place the marker, then confirm.
             </Text>
             <Pressable
               onPress={confirmMapLocation}

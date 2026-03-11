@@ -83,7 +83,7 @@ services:
       - "3000:3000"
     environment:
       DATABASE_URL: mongodb://root:password@mongodb:27017/gateway_db?authSource=admin
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672?heartbeat=30
       REDIS_HOST: redis
       REDIS_PORT: 6379
       JWT_SECRET: WDulkMiuJhDkWtxJ9pzfWogfOowGAaKDIC8X6DKYVQ9zBMP5kBvpY-qxj4HZBjq_
@@ -110,7 +110,7 @@ services:
       - /app/node_modules
     environment:
       MONGODB_URI: mongodb://root:password@mongodb:27017/auth_db?authSource=admin
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672?heartbeat=30
       RABBITMQ_AUTH_QUEUE: auth_queue
       REDIS_HOST: redis
       REDIS_PORT: 6379
@@ -145,7 +145,7 @@ services:
       - /app/node_modules
     environment:
       MONGODB_URI: mongodb://root:password@mongodb:27017/catalog_db?authSource=admin
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672?heartbeat=30
       RABBITMQ_CATALOG_QUEUE: catalog_queue
       RABBITMQ_AUTH_QUEUE: auth_queue
       REDIS_HOST: redis
@@ -187,7 +187,7 @@ services:
       - /app/node_modules
     environment:
       MONGODB_URI: mongodb://root:password@mongodb:27017/notation_db?authSource=admin
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672?heartbeat=30
       RABBITMQ_NOTATION_QUEUE: notation_queue
       RABBITMQ_CATALOG_QUEUE: catalog_queue
       REDIS_HOST: redis
@@ -219,7 +219,7 @@ services:
       - /app/node_modules
     environment:
       MONGODB_URI: mongodb://root:password@mongodb:27017/payment_db?authSource=admin
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672?heartbeat=30
       RABBITMQ_PAYMENT_QUEUE: payment_queue
       RABBITMQ_ORDERS_QUEUE: orders_queue
       RABBITMQ_AUTH_QUEUE: auth_queue
@@ -252,7 +252,7 @@ services:
       - /app/node_modules
     environment:
       MONGODB_URI: mongodb://root:password@mongodb:27017/orders_db?authSource=admin
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672?heartbeat=30
       REDIS_HOST: redis
       REDIS_PORT: 6379
       TCP_PORT: 3003

@@ -24,14 +24,19 @@ export class OrderController {
   }
 
   @MessagePattern(ORDERS_PATTERNS.ORDER_FIND_ALL)
-  findAll(@Payload() payload: { user: { sub: string; role: string } }) {
-    return this.orderService.findAll(payload.user.sub, payload.user.role);
+  findAll(@Payload() payload: { user?: { sub?: string; role?: string } }) {
+    return this.orderService.findAll(payload?.user?.sub ?? '', payload?.user?.role ?? '');
+  }
+
+  @MessagePattern(ORDERS_PATTERNS.ORDER_FIND_PATISSIERE)
+  findPatissiereOrders(@Payload() payload: { user?: { sub?: string } }) {
+    return this.orderService.findPatissiereOrders(payload?.user?.sub ?? '');
   }
 
   @MessagePattern(ORDERS_PATTERNS.ORDER_FIND_ONE)
-  findOne(@Payload() payload: { params: { id: string } }) {
-    const id  = payload.params.id;
-    return this.orderService.findOne(id);
+  findOne(@Payload() payload: { params: { id: string }; user?: { sub?: string; role?: string } }) {
+    const id = payload.params.id;
+    return this.orderService.findOne(id, payload?.user?.sub ?? '', payload?.user?.role ?? '');
   }
 
   @MessagePattern(ORDERS_PATTERNS.ORDER_REMOVE)
