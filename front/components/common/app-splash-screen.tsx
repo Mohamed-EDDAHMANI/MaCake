@@ -48,7 +48,7 @@ export default function AppSplashScreen() {
           <MaterialIcons name="restaurant" size={58} color={PRIMARY} />
           <Text style={styles.logoM}>M</Text>
         </View>
-        <Text style={styles.brand}>MaCack</Text>
+        <Text style={styles.brand}>MaCake</Text>
         <Text style={styles.tagline}>Artisan Pastry Marketplace</Text>
       </View>
 

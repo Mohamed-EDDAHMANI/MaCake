@@ -177,9 +177,9 @@ export function AppSidebar({ visible, onClose }: AppSidebarProps) {
         }
       : role === "LIVREUR"
         ? {
-            icon: "local-shipping",
-            label: "Livreur Dashboard",
-            onPress: () => navigateAndClose(() => router.replace("/(livreur)" as any)),
+            icon: "work-outline",
+            label: "Work space",
+            onPress: () => navigateAndClose(() => router.push("/(main)/workspace" as any)),
           }
         : role === "ADMIN" || role === "MANAGER" || role === "SUPER_ADMIN"
           ? {

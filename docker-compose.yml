@@ -3,7 +3,7 @@ version: "3.8"
 services:
   mongodb:
     image: mongo:7
-    container_name: macack-mongodb-dev
+    container_name: macake-mongodb-dev
     ports:
       - "27017:27017"
     environment:
@@ -17,29 +17,29 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - macack-network
+      - macake-network
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: macack-rabbitmq-dev
+    container_name: macake-rabbitmq-dev
     ports:
       - "5673:5672"
       - "15673:15672"
     environment:
       RABBITMQ_DEFAULT_USER: guest
       RABBITMQ_DEFAULT_PASS: guest
-      RABBITMQ_ERLANG_COOKIE: "macack_secret_cookie"
+      RABBITMQ_ERLANG_COOKIE: "macake_secret_cookie"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 15s
       timeout: 10s
       retries: 10
     networks:
-      - macack-network
+      - macake-network
 
   redis:
     image: redis:7-alpine
-    container_name: macack-redis-dev
+    container_name: macake-redis-dev
     ports:
       - "6379:6379"
     healthcheck:
@@ -48,11 +48,11 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - macack-network
+      - macake-network
 
   minio:
     image: minio/minio:latest
-    container_name: macack-minio-dev
+    container_name: macake-minio-dev
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
@@ -68,7 +68,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - macack-network
+      - macake-network
 
   gateway:
     build:
@@ -97,7 +97,7 @@ services:
       mongodb:
         condition: service_healthy
     networks:
-      - macack-network
+      - macake-network
 
   auth-service:
     build:
@@ -130,7 +130,7 @@ services:
       minio:
         condition: service_healthy
     networks:
-      - macack-network
+      - macake-network
     ports:
       - "3001:3001"
 
@@ -172,7 +172,7 @@ services:
       minio:
         condition: service_healthy
     networks:
-      - macack-network
+      - macake-network
     ports:
       - "3002:3002"
 
@@ -204,7 +204,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - macack-network
+      - macake-network
     ports:
       - "3006:3006"
 
@@ -228,6 +228,7 @@ services:
       TCP_PORT: 3005
       PORT: 3005
       HOST: payment-service
+      STRIPE_CURRENCY: mad
       CHOKIDAR_USEPOLLING: "true"
     depends_on:
       mongodb:
@@ -237,7 +238,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - macack-network
+      - macake-network
     ports:
       - "3005:3005"
 
@@ -249,7 +250,6 @@ services:
     command: npm run start:dev
     volumes:
       - ./order-service:/app
-      - /app/node_modules
     environment:
       MONGODB_URI: mongodb://root:password@mongodb:27017/orders_db?authSource=admin
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672?heartbeat=30
@@ -267,7 +267,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - macack-network
+      - macake-network
     ports:
       - "3003:3003"
 
@@ -276,5 +276,5 @@ volumes:
   minio_data_dev:
 
 networks:
-  macack-network:
+  macake-network:
     driver: bridge

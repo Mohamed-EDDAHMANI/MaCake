@@ -11,7 +11,7 @@ export async function toggleFollowApi(
   const res = await api.post<{
     success: boolean;
     data?: { following: boolean; count: number };
-  }>("/s5/follower/toggle", { clientId, patissiereId });
+  }>("/s6/follower/toggle", { clientId, patissiereId });
   const data = res.data?.data;
   return {
     following: data?.following ?? false,

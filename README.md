@@ -1,7 +1,7 @@
-# 🎂 MaCack – Marketplace de gâteaux faits maison
+# 🎂 MaCake – Marketplace de gâteaux faits maison
 
 ## 📌 Présentation du projet
-**MaCack** est une plateforme web & mobile de type **Marketplace** qui met en relation :
+**MaCake** est une plateforme web & mobile de type **Marketplace** qui met en relation :
 - 👩‍🍳 **Pâtissières** préparant des gâteaux à domicile
 - 👤 **Clients** souhaitant commander des gâteaux personnalisés
 - 🚚 **Livreurs indépendants** pour assurer la livraison (modèle type InDrive)
@@ -83,7 +83,7 @@ La plateforme agit comme **tiers de confiance sécurisé (escrow)** entre les tr
 - Répartition automatique :
   - Pâtissière
   - Livreur
-  - Commission MaCack
+  - Commission MaCake
 - Gestion des litiges par l’admin
 
 ---
@@ -125,4 +125,4 @@ La plateforme agit comme **tiers de confiance sécurisé (escrow)** entre les tr
 ---
 
 ## 🧠 Conclusion
-MaCack est une solution innovante qui connecte clients, pâtissières et livreurs dans un écosystème sécurisé, flexible et orienté expérience utilisateur.
+MaCake est une solution innovante qui connecte clients, pâtissières et livreurs dans un écosystème sécurisé, flexible et orienté expérience utilisateur.

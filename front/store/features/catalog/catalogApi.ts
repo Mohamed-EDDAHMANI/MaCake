@@ -139,7 +139,7 @@ export async function fetchProductsApi(): Promise<Product[]> {
  */
 export async function fetchProductByIdApi(id: string): Promise<Product> {
   const res = await api.get(`/s2/product/getOne/${id}`);
-  const raw = res.data?.data ?? res.data;
+  const raw = res.data?.data?.product ?? res.data?.data ?? res.data;
   return mapProduct(raw);
 }
 
@@ -224,7 +224,7 @@ export async function toggleLikeApi(
   userId: string,
 ): Promise<{ liked: boolean; count: number }> {
   const res = await api.post<{ success: boolean; data?: { liked: boolean; count: number } }>(
-    "/s5/like/toggle",
+    "/s6/like/toggle",
     { productId, userId },
   );
   const data = res.data?.data;

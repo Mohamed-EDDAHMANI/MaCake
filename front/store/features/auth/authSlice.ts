@@ -29,6 +29,9 @@ export interface AuthUser {
   description?: string | null;
   /** Client only: from auth-service get-profile / login */
   walletBalance?: number;
+  /** Livreur: from auth-service get-profile */
+  vehicleType?: string | null;
+  deliveriesCompleted?: number;
 }
 
 // Auth-service success response data (login/register)

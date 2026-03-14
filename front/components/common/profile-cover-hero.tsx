@@ -2,9 +2,17 @@ import { ReactNode } from "react";
 import { View, Pressable, StyleSheet, Platform } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
 import { MaterialIcons } from "@expo/vector-icons";
 import { PRIMARY, PRIMARY_TINT, BACKGROUND_LIGHT, SURFACE } from "@/constants/colors";
 import { buildPhotoUrl } from "@/lib/utils";
+
+export interface ProfileTopBarProps {
+  showBack?: boolean;
+  onBack?: () => void;
+  onShare?: () => void;
+  onOptions?: () => void;
+}
 
 const COVER_HEIGHT = 200;
 const AVATAR_SIZE = 112;
@@ -17,10 +25,14 @@ export interface ProfileCoverHeroProps {
   avatarUri?: string | null;
   /** Cover/banner image. If null, uses default. */
   coverUri?: string | null;
-  /** Show verified badge on avatar */
+  /** Show verified badge on avatar (deprecated: use showAvailabilityDot for livreur) */
   showVerifiedBadge?: boolean;
+  /** Show green status dot on avatar to indicate available (e.g. livreur) */
+  showAvailabilityDot?: boolean;
   /** When set, avatar is pressable (e.g. edit profile) */
   onAvatarPress?: () => void;
+  /** Top bar over cover: back, share, options icons (same on all profiles) */
+  topBar?: ProfileTopBarProps;
   /** Content below the avatar (name, location, buttons, etc.) */
   children?: ReactNode;
 }
@@ -33,7 +45,9 @@ export function ProfileCoverHero({
   avatarUri,
   coverUri,
   showVerifiedBadge = false,
+  showAvailabilityDot = false,
   onAvatarPress,
+  topBar,
   children,
 }: ProfileCoverHeroProps) {
   const cover = coverUri ? buildPhotoUrl(coverUri) : null;
@@ -60,22 +74,74 @@ export function ProfileCoverHero({
           locations={[0, 0.5, 1]}
           style={StyleSheet.absoluteFill}
         />
+        {topBar ? (
+          <View style={styles.topBar}>
+            {topBar.showBack && topBar.onBack ? (
+              <Pressable onPress={topBar.onBack} style={styles.glassBtn}>
+                <BlurView
+                  intensity={80}
+                  tint="light"
+                  style={styles.glassBtnInner}
+                  {...(Platform.OS === "android"
+                    ? { experimentalBlurMethod: "dimezisBlurView" as const }
+                    : {})}
+                >
+                  <MaterialIcons name="arrow-back" size={22} color="#fff" />
+                </BlurView>
+              </Pressable>
+            ) : (
+              <View style={styles.glassBtnPlaceholder} />
+            )}
+            <View style={styles.topBarRight}>
+              <Pressable
+                style={styles.glassBtn}
+                onPress={topBar.onShare}
+              >
+                <BlurView
+                  intensity={80}
+                  tint="light"
+                  style={styles.glassBtnInner}
+                  {...(Platform.OS === "android"
+                    ? { experimentalBlurMethod: "dimezisBlurView" as const }
+                    : {})}
+                >
+                  <MaterialIcons name="share" size={22} color="#fff" />
+                </BlurView>
+              </Pressable>
+              <Pressable
+                style={styles.glassBtn}
+                onPress={topBar.onOptions}
+              >
+                <BlurView
+                  intensity={80}
+                  tint="light"
+                  style={styles.glassBtnInner}
+                  {...(Platform.OS === "android"
+                    ? { experimentalBlurMethod: "dimezisBlurView" as const }
+                    : {})}
+                >
+                  <MaterialIcons name="more-horiz" size={22} color="#fff" />
+                </BlurView>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
       </View>
 
       {/* Profile block: avatar overlapping cover + optional children */}
       <View style={styles.profileBlock}>
-        <AvatarWrap style={styles.avatarRing} {...avatarWrapProps}>
-          {avatar ? (
-            <Image source={{ uri: avatar }} style={styles.avatarImg} contentFit="cover" />
-          ) : (
-            <View style={styles.avatarPlaceholder}>
-              <MaterialIcons name="person" size={48} color={PRIMARY} />
-            </View>
-          )}
-          {showVerifiedBadge ? (
-            <View style={styles.verifiedBadge}>
-              <MaterialIcons name="verified" size={14} color="#fff" />
-            </View>
+        <AvatarWrap style={styles.avatarOuter} {...avatarWrapProps}>
+          <View style={styles.avatarRing}>
+            {avatar ? (
+              <Image source={{ uri: avatar }} style={styles.avatarImg} contentFit="cover" />
+            ) : (
+              <View style={styles.avatarPlaceholder}>
+                <MaterialIcons name="person" size={48} color={PRIMARY} />
+              </View>
+            )}
+          </View>
+          {showAvailabilityDot ? (
+            <View style={styles.availabilityDot} />
           ) : null}
         </AvatarWrap>
         {children}
@@ -93,11 +159,44 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   coverImg: { width: "100%", height: "100%" },
+  topBar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: Platform.OS === "ios" ? 50 : 40,
+    paddingBottom: 12,
+    zIndex: 10,
+  },
+  glassBtn: {
+    borderRadius: 9999,
+    overflow: "hidden",
+  },
+  glassBtnPlaceholder: { width: 40, height: 40 },
+  glassBtnInner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    backgroundColor: "rgba(255,255,255,0.35)",
+  },
+  topBarRight: { flexDirection: "row", gap: 8 },
   profileBlock: {
     marginTop: -AVATAR_SIZE / 2,
     paddingHorizontal: 16,
     alignItems: "center",
     zIndex: 10,
+  },
+  avatarOuter: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    position: "relative",
   },
   avatarRing: {
     width: AVATAR_SIZE,
@@ -137,5 +236,16 @@ const styles = StyleSheet.create({
     borderColor: SURFACE,
     alignItems: "center",
     justifyContent: "center",
+  },
+  availabilityDot: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#22c55e",
+    borderWidth: 2.5,
+    borderColor: SURFACE,
   },
 });

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Keyboard,
+  type KeyboardEvent,
   Platform,
   Switch,
 } from "react-native";
@@ -32,6 +34,7 @@ import {
   SURFACE,
 } from "@/constants/colors";
 import { TabScreenWithAnimation } from "@/components/TabScreenWithAnimation";
+import OrderSuccessPopup from "@/components/product-detail/OrderSuccessPopup";
 
 const STATIC_CATEGORIES = ["Birthday", "Wedding", "Chocolate", "Vegan", "Fruit", "Custom"];
 
@@ -51,12 +54,34 @@ export default function CreateProductScreen() {
   const [ingredients, setIngredients] = useState<string[]>([]);
   const [ingredientInput, setIngredientInput] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ─── fetch categories via Redux ─── */
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchProducts());
   }, [dispatch]);
+
+  useEffect(() => {
+    const onShow = (event: KeyboardEvent) => setKeyboardHeight(event.endCoordinates?.height ?? 0);
+    const onHide = () => setKeyboardHeight(0);
+    const showSub = Keyboard.addListener("keyboardDidShow", onShow);
+    const hideSub = Keyboard.addListener("keyboardDidHide", onHide);
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+      }
+    };
+  }, []);
 
   /* ─── merge static + API categories, deduplicate ─── */
   const categories = useMemo(() => {
@@ -143,9 +168,20 @@ export default function CreateProductScreen() {
       }
 
       await api.post("/s2/product/create", payload);
-      Alert.alert("Success", "Your product has been published!", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      // Refresh products list so the new one appears immediately in views
+      dispatch(fetchProducts());
+      setShowSuccess(true);
+      successTimeoutRef.current = setTimeout(() => {
+        setShowSuccess(false);
+      }, 1400);
+      setTitle("");
+      setPrice("");
+      setDescription("");
+      setIsActive(true);
+      setSelectedCategory("Birthday");
+      setImages([]);
+      setIngredients([]);
+      setIngredientInput("");
     } catch (e: any) {
       Alert.alert("Error", e?.response?.data?.message ?? "Failed to publish. Try again.");
     } finally {
@@ -178,12 +214,13 @@ export default function CreateProductScreen() {
         </Text>
       </View>
 
-      <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView
           className="flex-1"
-          contentContainerStyle={{ paddingBottom: 140 }}
+          contentContainerStyle={{ paddingBottom: 140 + keyboardHeight }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="none"
         >
           <View className="p-4" style={{ gap: 24 }}>
             {/* ═══ Upload Images ═══ */}
@@ -346,10 +383,7 @@ export default function CreateProductScreen() {
               </Text>
               <TextInput
                 className="rounded-xl text-base text-slate-900"
-                style={[
-                  s.input,
-                  { minHeight: 130, textAlignVertical: "top", paddingTop: 14, borderColor: `${PRIMARY}1A`, backgroundColor: BACKGROUND_LIGHT },
-                ]}
+                style={[s.textarea, { borderColor: `${PRIMARY}1A`, backgroundColor: BACKGROUND_LIGHT }]}
                 placeholder="Describe the flavors, texture, and special touches..."
                 placeholderTextColor={SLATE_400}
                 multiline
@@ -445,6 +479,7 @@ export default function CreateProductScreen() {
           )}
         </Pressable>
       </View>
+      <OrderSuccessPopup visible={showSuccess} message="Product published successfully" />
       </SafeAreaView>
     </TabScreenWithAnimation>
   );
@@ -456,6 +491,15 @@ const s = StyleSheet.create({
     paddingHorizontal: 16,
     borderWidth: 1,
     borderRadius: 12,
+  },
+  textarea: {
+    minHeight: 130,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 14,
+    borderWidth: 1,
+    borderRadius: 12,
+    textAlignVertical: "top",
   },
   publishShadow: {
     shadowColor: PRIMARY,

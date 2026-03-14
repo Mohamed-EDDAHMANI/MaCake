@@ -10,7 +10,7 @@ export async function toggleProfileLikeApi(
   const res = await api.post<{
     success: boolean;
     data?: { liked: boolean; count: number };
-  }>("/s5/profile-like/toggle", { userId, patissiereId });
+  }>("/s6/profile-like/toggle", { userId, patissiereId });
   const data = res.data?.data;
   return {
     liked: data?.liked ?? false,
@@ -24,7 +24,7 @@ export async function getProfileLikeCountApi(
   const res = await api.get<{
     success: boolean;
     data?: { count: number };
-  }>(`/s5/profile-like/count`, { params: { patissiereId } });
+  }>(`/s6/profile-like/count`, { params: { patissiereId } });
   const data = res.data?.data;
   return { count: data?.count ?? 0 };
 }
@@ -36,7 +36,7 @@ export async function checkProfileLikedApi(
   const res = await api.get<{
     success: boolean;
     data?: { liked: boolean };
-  }>(`/s5/profile-like/check`, { params: { userId, patissiereId } });
+  }>(`/s6/profile-like/check`, { params: { userId, patissiereId } });
   const data = res.data?.data;
   return { liked: data?.liked ?? false };
 }

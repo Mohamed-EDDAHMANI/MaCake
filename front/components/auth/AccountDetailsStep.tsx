@@ -118,6 +118,7 @@ export function AccountDetailsStep({
   const [countrySearch, setCountrySearch] = useState("");
   const [countriesLoading, setCountriesLoading] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
+  const [isOpeningMap, setIsOpeningMap] = useState(false);
   const [isMapModalVisible, setIsMapModalVisible] = useState(false);
   const [isResolvingMapAddress, setIsResolvingMapAddress] = useState(false);
   const [mapCenter, setMapCenter] = useState(OSM_DEFAULT_COORDS);
@@ -269,12 +270,28 @@ export function AccountDetailsStep({
     }
   };
 
-  const openMapPicker = () => {
-    const latitude = formData.latitude ?? mapPin?.latitude ?? mapCenter.latitude;
-    const longitude = formData.longitude ?? mapPin?.longitude ?? mapCenter.longitude;
-    setMapCenter({ latitude, longitude });
-    setMapPin({ latitude, longitude });
-    setIsMapModalVisible(true);
+  const openMapPicker = async () => {
+    try {
+      setIsOpeningMap(true);
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== "granted") {
+        Alert.alert("Location permission", "Please allow location access to open map on your current position.");
+        return;
+      }
+
+      const current = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const latitude = current.coords.latitude;
+      const longitude = current.coords.longitude;
+      setMapCenter({ latitude, longitude });
+      setMapPin({ latitude, longitude });
+      setIsMapModalVisible(true);
+    } catch {
+      Alert.alert("Location error", "Unable to fetch your current location to open map.");
+    } finally {
+      setIsOpeningMap(false);
+    }
   };
 
   const handleMapWebMessage = (raw: string) => {
@@ -524,6 +541,7 @@ export function AccountDetailsStep({
             </Pressable>
             <Pressable
               onPress={openMapPicker}
+              disabled={isOpeningMap}
               style={{
                 height: 48,
                 borderRadius: 12,
@@ -534,11 +552,16 @@ export function AccountDetailsStep({
                 justifyContent: "center",
                 flexDirection: "row",
                 gap: 8,
+                opacity: isOpeningMap ? 0.75 : 1,
               }}
             >
-              <MaterialIcons name="map" size={18} color={PRIMARY} />
+              {isOpeningMap ? (
+                <ActivityIndicator size="small" color={PRIMARY} />
+              ) : (
+                <MaterialIcons name="map" size={18} color={PRIMARY} />
+              )}
               <Text style={{ color: PRIMARY, fontWeight: "700", fontSize: 15 }}>
-                Choose location from map
+                {isOpeningMap ? "Opening map..." : "Choose location from map"}
               </Text>
             </Pressable>
 

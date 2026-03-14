@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -17,8 +17,11 @@ import {
 } from "@/constants/colors";
 import { getClientOrdersApi, getPatissiereOrdersApi, type ClientOrder } from "@/store/features/order/orderApi";
 import { useAppSelector } from "@/store/hooks";
+import { fetchProductByIdApi } from "@/store/features/catalog/catalogApi";
+import { buildPhotoUrl } from "@/lib/utils";
+import { getOrderSocket } from "@/lib/order-socket";
 
-type OrderStatus = "pending" | "accepted" | "preparing" | "delivering" | "delivered" | "refused";
+type OrderStatus = "pending" | "accepted" | "preparing" | "completed" | "delivering" | "delivered" | "refused";
 type OrderCardData = ClientOrder & {
   title: string;
   chefName: string;
@@ -30,9 +33,10 @@ const STATUS_PRIORITY: Record<OrderStatus, number> = {
   pending: 0,
   accepted: 1,
   preparing: 2,
-  delivering: 3,
-  delivered: 4,
-  refused: 5,
+  completed: 3,
+  delivering: 4,
+  delivered: 5,
+  refused: 6,
 };
 
 const FALLBACK_IMAGES = [
@@ -45,6 +49,7 @@ const statusMap: Record<OrderStatus, { bg: string; text: string; label: string }
   pending: { bg: "#dbeafe", text: "#1d4ed8", label: "Pending" },
   accepted: { bg: "#e0f2fe", text: "#0369a1", label: "Accepted" },
   preparing: { bg: "#fef9c3", text: "#a16207", label: "Preparing" },
+  completed: { bg: "#cffafe", text: "#0e7490", label: "Completed" },
   delivering: { bg: "#e0e7ff", text: "#4338ca", label: "Delivering" },
   delivered: { bg: "#dcfce7", text: "#15803d", label: "Delivered" },
   refused: { bg: "#fee2e2", text: "#b91c1c", label: "Refused" },
@@ -65,21 +70,35 @@ function formatDateTime(value: string): string {
   })} • ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-function buildUiTitle(order: ClientOrder): string {
+function buildUiTitle(order: ClientOrder, firstProductNameByOrderId: Record<string, string>): string {
   if (order.items.length === 0) return `Order #${order.id.slice(-6)}`;
-  const first = order.items[0];
-  if (order.items.length === 1) return `Product ${first.productId.slice(-6)}`;
-  return `Product ${first.productId.slice(-6)} +${order.items.length - 1}`;
+  const firstProductName = firstProductNameByOrderId[order.id] ?? "Product";
+  if (order.items.length === 1) return firstProductName;
+  return `${firstProductName} +${order.items.length - 1}`;
 }
 
-function orderToCard(order: ClientOrder, index: number): OrderCardData {
+function resolveProductImage(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  return buildPhotoUrl(raw) ?? undefined;
+}
+
+function orderToCard(
+  order: ClientOrder,
+  index: number,
+  imageByOrderId: Record<string, string>,
+  firstProductNameByOrderId: Record<string, string>
+): OrderCardData {
   return {
     ...order,
-    title: buildUiTitle(order),
+    title: buildUiTitle(order, firstProductNameByOrderId),
     chefName: order.patissiereAddress || `Patissiere ${order.patissiereId.slice(-6)}`,
-    imageUri: FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
+    imageUri: imageByOrderId[order.id] ?? FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
     requestedDateTimeText: formatDateTime(order.requestedDateTime),
   };
+}
+
+function getOrderDetailsRoute(orderId: string): `/(main)/order/${string}` {
+  return `/(main)/order/${orderId}`;
 }
 
 export default function ClientOrdersScreen() {
@@ -90,29 +109,76 @@ export default function ClientOrdersScreen() {
   const [orders, setOrders] = useState<OrderCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [patissiereView, setPatissiereView] = useState<"created" | "to_prepare">("created");
+
+  const loadOrders = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = isPatissiere ? await getPatissiereOrdersApi() : await getClientOrdersApi();
+      const firstProductByOrder = data
+        .map((order) => ({ orderId: order.id, productId: order.items[0]?.productId }))
+        .filter((x): x is { orderId: string; productId: string } => Boolean(x.productId));
+
+      const uniqueProductIds = Array.from(new Set(firstProductByOrder.map((x) => x.productId)));
+      const productImageById: Record<string, string> = {};
+      const productNameById: Record<string, string> = {};
+      await Promise.allSettled(
+        uniqueProductIds.map(async (productId) => {
+          const product = await fetchProductByIdApi(productId);
+          if (product.title) {
+            productNameById[productId] = product.title;
+          }
+          const imageUri = resolveProductImage(product.images?.[0]);
+          if (imageUri) productImageById[productId] = imageUri;
+        })
+      );
+
+      const imageByOrderId: Record<string, string> = {};
+      const firstProductNameByOrderId: Record<string, string> = {};
+      for (const pair of firstProductByOrder) {
+        const imageUri = productImageById[pair.productId];
+        if (imageUri) imageByOrderId[pair.orderId] = imageUri;
+        const name = productNameById[pair.productId];
+        if (name) firstProductNameByOrderId[pair.orderId] = name;
+      }
+
+      setOrders(
+        data.map((order, index) =>
+          orderToCard(order, index, imageByOrderId, firstProductNameByOrderId)
+        )
+      );
+    } catch (e: any) {
+      const msg = e?.response?.data?.message || e?.message || "Failed to load orders.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  }, [isPatissiere]);
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = isPatissiere ? await getPatissiereOrdersApi() : await getClientOrdersApi();
-        if (!mounted) return;
-        setOrders(data.map(orderToCard));
-      } catch (e: any) {
-        if (!mounted) return;
-        const msg = e?.response?.data?.message || e?.message || "Failed to load orders.";
-        setError(msg);
-      } finally {
-        if (mounted) setLoading(false);
-      }
+    loadOrders();
+  }, [loadOrders]);
+
+  // Subscribe to realtime order status changes (and new orders)
+  useEffect(() => {
+    const socket = getOrderSocket();
+    const handler = (payload: { orderId: string; status: OrderStatus }) => {
+      setOrders((prev) => {
+        const exists = prev.some((o) => o.id === payload.orderId);
+        if (!exists) {
+          // New order not in the list yet – refetch orders
+          loadOrders();
+          return prev;
+        }
+        return prev.map((o) => (o.id === payload.orderId ? { ...o, status: payload.status } : o));
+      });
     };
-    load();
+    socket.on("order.status.changed", handler);
     return () => {
-      mounted = false;
+      socket.off("order.status.changed", handler);
     };
-  }, [isPatissiere]);
+  }, [loadOrders]);
 
   const ongoing = useMemo(
     () =>
@@ -124,7 +190,7 @@ export default function ClientOrdersScreen() {
   const history = useMemo(
     () =>
       orders
-        .filter((o) => ["delivered", "refused"].includes(o.status))
+        .filter((o) => ["completed", "delivered", "refused"].includes(o.status))
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [orders]
   );
@@ -141,6 +207,10 @@ export default function ClientOrdersScreen() {
         .filter((o) => o.patissiereId === authUserId)
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
     [orders, authUserId]
+  );
+  const selectedPatissiereOrders = useMemo(
+    () => (patissiereView === "created" ? patissiereAsClientOrders : patissiereIncomingOrders),
+    [patissiereView, patissiereAsClientOrders, patissiereIncomingOrders]
   );
 
   if (loading) {
@@ -180,39 +250,50 @@ export default function ClientOrdersScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isPatissiere ? (
           <>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>My Purchase Orders</Text>
-              {patissiereAsClientOrders.length ? (
-                patissiereAsClientOrders.map((order) => (
-                  <OrderCard
-                    key={`buy-${order.id}`}
-                    order={order}
-                    history={["delivered", "refused"].includes(order.status)}
-                    onViewDetails={() =>
-                      router.push({ pathname: "/(main)/order/[id]", params: { id: order.id } } as any)
-                    }
-                  />
-                ))
-              ) : (
-                <Text style={styles.emptyText}>No purchase orders yet.</Text>
-              )}
+            <View style={styles.patissiereTabs}>
+              <Pressable
+                style={[styles.patissiereTabBtn, patissiereView === "created" && styles.patissiereTabBtnActive]}
+                onPress={() => setPatissiereView("created")}
+              >
+                <Text
+                  style={[styles.patissiereTabText, patissiereView === "created" && styles.patissiereTabTextActive]}
+                >
+                  My Created Orders
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.patissiereTabBtn, patissiereView === "to_prepare" && styles.patissiereTabBtnActive]}
+                onPress={() => setPatissiereView("to_prepare")}
+              >
+                <Text
+                  style={[
+                    styles.patissiereTabText,
+                    patissiereView === "to_prepare" && styles.patissiereTabTextActive,
+                  ]}
+                >
+                  To Accept & Prepare
+                </Text>
+              </Pressable>
             </View>
-
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Orders To Prepare</Text>
-              {patissiereIncomingOrders.length ? (
-                patissiereIncomingOrders.map((order) => (
+              <Text style={styles.sectionTitle}>
+                {patissiereView === "created" ? "My Created Orders" : "Orders To Accept & Prepare"}
+              </Text>
+              {selectedPatissiereOrders.length ? (
+                selectedPatissiereOrders.map((order) => (
                   <OrderCard
-                    key={`prepare-${order.id}`}
+                    key={`${patissiereView}-${order.id}`}
                     order={order}
                     history={["delivered", "refused"].includes(order.status)}
-                    onViewDetails={() =>
-                      router.push({ pathname: "/(main)/order/[id]", params: { id: order.id } } as any)
-                    }
+                    onViewDetails={() => router.push(getOrderDetailsRoute(order.id))}
                   />
                 ))
               ) : (
-                <Text style={styles.emptyText}>No incoming orders to prepare.</Text>
+                <Text style={styles.emptyText}>
+                  {patissiereView === "created"
+                    ? "No created orders yet."
+                    : "No orders to accept or prepare right now."}
+                </Text>
               )}
             </View>
           </>
@@ -225,9 +306,7 @@ export default function ClientOrdersScreen() {
                   <OrderCard
                     key={order.id}
                     order={order}
-                    onViewDetails={() =>
-                      router.push({ pathname: "/(main)/order/[id]", params: { id: order.id } } as any)
-                    }
+                    onViewDetails={() => router.push(getOrderDetailsRoute(order.id))}
                   />
                 ))
               ) : (
@@ -243,9 +322,7 @@ export default function ClientOrdersScreen() {
                     key={order.id}
                     order={order}
                     history
-                    onViewDetails={() =>
-                      router.push({ pathname: "/(main)/order/[id]", params: { id: order.id } } as any)
-                    }
+                    onViewDetails={() => router.push(getOrderDetailsRoute(order.id))}
                   />
                 ))
               ) : (
@@ -333,6 +410,30 @@ const styles = StyleSheet.create({
   },
   content: { padding: 14, gap: 20, paddingBottom: 32 },
   section: { gap: 10 },
+  patissiereTabs: {
+    flexDirection: "row",
+    backgroundColor: SURFACE,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER_SUBTLE,
+    padding: 4,
+    gap: 6,
+  },
+  patissiereTabBtn: {
+    flex: 1,
+    height: 36,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "transparent",
+  },
+  patissiereTabBtnActive: {
+    backgroundColor: PRIMARY_05,
+    borderWidth: 1,
+    borderColor: `${PRIMARY}33`,
+  },
+  patissiereTabText: { fontSize: 11, fontWeight: "700", color: SLATE_500 },
+  patissiereTabTextActive: { color: PRIMARY, fontWeight: "800" },
   sectionTitle: {
     marginLeft: 2,
     fontSize: 11,

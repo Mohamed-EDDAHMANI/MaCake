@@ -3,6 +3,7 @@ import { useAppSelector } from "@/store/hooks";
 import { useAuthModal } from "@/contexts/AuthModalContext";
 import { ProfileContent } from "@/components/common/profile-content";
 import { ClientProfile } from "@/components/client/client-profile";
+import { DeliveryProfile } from "@/components/delivery/delivery-profile";
 import { TabScreenWithAnimation } from "@/components/TabScreenWithAnimation";
 
 export default function MainProfileScreen() {
@@ -20,6 +21,14 @@ export default function MainProfileScreen() {
     return (
       <TabScreenWithAnimation>
         <ClientProfile />
+      </TabScreenWithAnimation>
+    );
+  }
+
+  if (role === "LIVREUR") {
+    return (
+      <TabScreenWithAnimation>
+        <DeliveryProfile />
       </TabScreenWithAnimation>
     );
   }

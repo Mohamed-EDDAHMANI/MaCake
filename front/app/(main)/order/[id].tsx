@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import {
   BACKGROUND_LIGHT,
   BORDER_SUBTLE,
@@ -12,33 +12,64 @@ import {
   SLATE_200,
   SLATE_400,
   SLATE_500,
+  SLATE_600,
   SURFACE,
   TEXT_PRIMARY,
 } from "@/constants/colors";
-import { getClientOrderByIdApi, type ClientOrder } from "@/store/features/order/orderApi";
+import {
+  acceptOrderApi,
+  completeOrderApi,
+  getClientOrdersApi,
+  getClientOrderByIdApi,
+  getPatissiereOrdersApi,
+  type ClientOrder,
+  type ClientOrderItem,
+} from "@/store/features/order/orderApi";
+import { fetchProductByIdApi } from "@/store/features/catalog/catalogApi";
+import { buildPhotoUrl } from "@/lib/utils";
+import { useAppSelector } from "@/store/hooks";
+import { getOrderSocket } from "@/lib/order-socket";
+
+type TimelineStep = "pending" | "accepted" | "payment" | "preparing" | "completed" | "delivering" | "delivered";
+
+type ProductPreview = {
+  title: string;
+  imageUri?: string;
+  description?: string;
+};
 
 const FALLBACK_IMAGE =
   "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=500&auto=format&fit=crop";
-const MAP_IMAGE =
-  "https://images.unsplash.com/photo-1526778548025-fa2f459cd5ce?q=80&w=1200&auto=format&fit=crop";
-
-type TimelineStep = "pending" | "accepted" | "preparing" | "delivering" | "delivered";
 
 const STEPS: Array<{ key: TimelineStep; label: string; icon: keyof typeof MaterialIcons.glyphMap }> = [
-  { key: "pending", label: "Order Pending", icon: "hourglass-empty" },
-  { key: "accepted", label: "Accepted", icon: "task-alt" },
-  { key: "preparing", label: "Preparing", icon: "bakery-dining" },
-  { key: "delivering", label: "Delivering", icon: "local-shipping" },
+  { key: "pending", label: "Order Placed", icon: "check" },
+  { key: "accepted", label: "Accepted by Patissiere", icon: "check" },
+  { key: "payment", label: "Payment", icon: "payments" },
+  { key: "preparing", label: "Preparing your Box", icon: "adjust" },
+  { key: "completed", label: "Order Completed", icon: "task-alt" },
+  { key: "delivering", label: "Out for Delivery", icon: "local-shipping" },
   { key: "delivered", label: "Delivered", icon: "flag" },
 ];
 
 const STEP_INDEX: Record<TimelineStep | "refused", number> = {
   pending: 0,
   accepted: 1,
-  preparing: 2,
-  delivering: 3,
-  delivered: 4,
+  payment: 2,
+  preparing: 3,
+  completed: 4,
+  delivering: 5,
+  delivered: 6,
   refused: 0,
+};
+
+const STATUS_BADGE: Record<ClientOrder["status"], { bg: string; text: string; label: string }> = {
+  pending: { bg: `${PRIMARY}14`, text: PRIMARY, label: "Pending" },
+  accepted: { bg: "#dbeafe", text: "#1d4ed8", label: "Accepted" },
+  preparing: { bg: `${PRIMARY}14`, text: PRIMARY, label: "Preparing" },
+  completed: { bg: "#cffafe", text: "#0e7490", label: "Completed" },
+  delivering: { bg: "#e0e7ff", text: "#4338ca", label: "Delivering" },
+  delivered: { bg: "#dcfce7", text: "#15803d", label: "Delivered" },
+  refused: { bg: "#fee2e2", text: "#b91c1c", label: "Refused" },
 };
 
 function formatDateTime(value: string): string {
@@ -50,15 +81,28 @@ function formatDateTime(value: string): string {
   )}`;
 }
 
-function formatHour(value: Date): string {
-  return value.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+function formatDeliveryWindow(value: string): string {
+  const base = new Date(value);
+  if (Number.isNaN(base.getTime())) return "Today, --:-- - --:--";
+  const end = new Date(base.getTime() + 30 * 60 * 1000);
+  const dayPart = base.toDateString() === new Date().toDateString() ? "Today" : base.toLocaleDateString("en-GB");
+  const from = base.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit" });
+  const to = end.toLocaleTimeString("en-GB", { hour: "numeric", minute: "2-digit" });
+  return `${dayPart}, ${from} - ${to}`;
 }
 
-function buildTitle(order: ClientOrder): string {
-  if (!order.items.length) return `Order #${order.id.slice(-6).toUpperCase()}`;
-  const first = order.items[0];
-  if (order.items.length === 1) return `Product ${first.productId.slice(-6)}`;
-  return `Product ${first.productId.slice(-6)} +${order.items.length - 1}`;
+function formatTimelineTime(value: string): string {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return value;
+  return `${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}, ${d.toLocaleDateString(
+    "en-GB",
+    { day: "2-digit", month: "short" }
+  )}`;
+}
+
+function resolveImage(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  return buildPhotoUrl(raw) ?? undefined;
 }
 
 export default function OrderDetailsScreen() {
@@ -69,6 +113,11 @@ export default function OrderDetailsScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<ClientOrder | null>(null);
+  const [productById, setProductById] = useState<Record<string, ProductPreview>>({});
+  const [accepting, setAccepting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const authUserId = useAppSelector((state) => state.auth.user?.id ?? "");
+  const authRole = (useAppSelector((state) => state.auth.user?.role) ?? "").toLowerCase();
 
   const loadOrder = useCallback(async () => {
     if (!id) {
@@ -80,48 +129,81 @@ export default function OrderDetailsScreen() {
     try {
       setLoading(true);
       setError(null);
-      const found = await getClientOrderByIdApi(id);
+      setActionError(null);
+      let found: ClientOrder | null = null;
+      try {
+        found = await getClientOrderByIdApi(id);
+      } catch {
+        // Fallback for gateway 403 on find-one: resolve from role-based list endpoint.
+        const list = authRole === "patissiere" ? await getPatissiereOrdersApi() : await getClientOrdersApi();
+        found = list.find((o) => o.id === id) ?? null;
+      }
       if (!found) {
         setError("Order not found");
         setOrder(null);
-      } else {
-        setOrder(found);
+        return;
       }
+
+      setOrder(found);
+
+      const uniqueProductIds = Array.from(new Set(found.items.map((it) => it.productId).filter(Boolean)));
+      const previews: Record<string, ProductPreview> = {};
+      await Promise.allSettled(
+        uniqueProductIds.map(async (productId) => {
+          const product = await fetchProductByIdApi(productId);
+          previews[productId] = {
+            title: product.title || `Product ${productId.slice(-6)}`,
+            imageUri: resolveImage(product.images?.[0]),
+            description: product.description || "",
+          };
+        })
+      );
+      setProductById(previews);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Failed to load order details";
       setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, authRole]);
 
   useEffect(() => {
     loadOrder();
   }, [loadOrder]);
 
+  useFocusEffect(
+    useCallback(() => {
+      // Refresh order details whenever the screen gains focus (e.g. after payment).
+      loadOrder();
+    }, [loadOrder]),
+  );
+
+  // Live status updates for this specific order
+  useEffect(() => {
+    if (!id) return;
+    const socket = getOrderSocket();
+    const handler = (payload: { orderId: string; status: ClientOrder["status"] }) => {
+      if (payload.orderId !== id) return;
+      setOrder((prev) => (prev ? { ...prev, status: payload.status } : prev));
+    };
+    socket.on("order.status.changed", handler);
+    return () => {
+      socket.off("order.status.changed", handler);
+    };
+  }, [id]);
+
   const currentStepIndex = useMemo(() => {
     if (!order) return 0;
+    // Payment is inserted between accepted and preparing.
+    if (order.status === "accepted") return STEP_INDEX.payment;
     return STEP_INDEX[order.status];
   }, [order]);
 
-  const eta = useMemo(() => {
-    if (!order) return { start: "--:--", end: "--:--", minutesLeft: "--", progress: 0 };
-    const base = new Date(order.requestedDateTime);
-    if (Number.isNaN(base.getTime())) return { start: "--:--", end: "--:--", minutesLeft: "--", progress: 0 };
-
-    const end = new Date(base.getTime() + 30 * 60 * 1000);
-    const now = Date.now();
-    const minutesLeft = Math.max(0, Math.ceil((end.getTime() - now) / 60000));
-    const total = end.getTime() - base.getTime();
-    const done = Math.min(Math.max(0, now - base.getTime()), total);
-    const progress = total <= 0 ? 0 : Math.round((done / total) * 100);
-
-    return {
-      start: formatHour(base),
-      end: formatHour(end),
-      minutesLeft: String(minutesLeft),
-      progress,
-    };
+  const breakdown = useMemo(() => {
+    if (!order) return { subtotal: 0, total: 0 };
+    const subtotal = order.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const total = order.totalPrice > 0 ? order.totalPrice : subtotal;
+    return { subtotal, total };
   }, [order]);
 
   if (loading) {
@@ -141,291 +223,503 @@ export default function OrderDetailsScreen() {
         <View style={styles.center}>
           <MaterialIcons name="error-outline" size={24} color="#b91c1c" />
           <Text style={styles.errorText}>{error ?? "Order not found"}</Text>
-          <Pressable onPress={() => router.back()} style={styles.retryBtn}>
-            <Text style={styles.retryBtnText}>Go Back</Text>
+          <Pressable style={styles.retryBtn} onPress={() => router.back()}>
+            <Text style={styles.retryText}>Go Back</Text>
           </Pressable>
         </View>
       </SafeAreaView>
     );
   }
 
-  const isRefused = order.status === "refused";
+  const statusBadge = STATUS_BADGE[order.status];
   const orderCode = `MC-${order.id.slice(-4).toUpperCase()}`;
-  const totalQty = order.items.reduce((sum, it) => sum + it.quantity, 0);
-  const shownProgress = isRefused ? 0 : eta.progress;
+  const firstItem = order.items[0];
+  const firstTitle = firstItem ? productById[firstItem.productId]?.title ?? `Product ${firstItem.productId.slice(-6)}` : "Order";
+  const showPaymentButton = order.status === "accepted" && order.clientId === authUserId;
+  const isPatissiereIncomingOrder = authRole === "patissiere" && order.patissiereId === authUserId;
+  const showAcceptButton = isPatissiereIncomingOrder && order.status === "pending";
+  const showCompleteButton = isPatissiereIncomingOrder && order.status === "preparing";
+
+  const handleAcceptOrder = async () => {
+    if (!order || accepting) return;
+    try {
+      setAccepting(true);
+      setActionError(null);
+      const updated = await acceptOrderApi(order.id);
+      if (updated) {
+        setOrder(updated);
+      } else {
+        await loadOrder();
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to accept order";
+      setActionError(msg);
+    } finally {
+      setAccepting(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
-      <View style={styles.header}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={20} color={TEXT_PRIMARY} />
-        </Pressable>
-        <Text style={styles.headerTitle}>Track Order</Text>
-      </View>
-
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.summaryCard}>
-          <Image source={{ uri: FALLBACK_IMAGE }} style={styles.summaryImage} contentFit="cover" />
-          <View style={styles.summaryInfo}>
-            <Text style={styles.summaryTitle} numberOfLines={1}>
-              {buildTitle(order)}
-            </Text>
-            <Text style={styles.summarySub}>{order.patissiereAddress || "Chef bakery"}</Text>
-            <Text style={styles.summaryCode}>Order #{orderCode}</Text>
-            <Text style={styles.summaryMeta}>
-              {totalQty} item{totalQty > 1 ? "s" : ""} • {order.totalPrice.toFixed(2)} EUR
-            </Text>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Pressable style={styles.backBtn} onPress={() => router.back()}>
+              <MaterialIcons name="arrow-back" size={20} color={TEXT_PRIMARY} />
+            </Pressable>
+            <View>
+              <Text style={styles.headerSub}>Order Details</Text>
+              <Text style={styles.headerCode}>#{orderCode}</Text>
+            </View>
+          </View>
+          <View style={[styles.statusBadge, { backgroundColor: statusBadge.bg }]}>
+            <Text style={[styles.statusBadgeText, { color: statusBadge.text }]}>{statusBadge.label}</Text>
           </View>
         </View>
 
-        <View style={styles.statusCard}>
-          <Text style={styles.statusTitle}>Order Status</Text>
+        <View style={styles.deliveryCard}>
+          <View style={styles.deliveryIcon}>
+            <MaterialIcons name="delivery-dining" size={30} color={PRIMARY} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.deliveryMeta}>Estimated Delivery</Text>
+            <Text style={styles.deliveryRange}>{formatDeliveryWindow(order.requestedDateTime)}</Text>
+          </View>
+        </View>
 
-          {isRefused ? (
-            <View style={styles.refusedWrap}>
-              <View style={styles.refusedIcon}>
-                <MaterialIcons name="cancel" size={18} color="#b91c1c" />
+        {isPatissiereIncomingOrder ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Client Request</Text>
+            <View style={styles.requestCard}>
+              <View style={styles.requestRow}>
+                <MaterialIcons name="schedule" size={16} color={PRIMARY} />
+                <Text style={styles.requestText}>{formatDateTime(order.requestedDateTime)}</Text>
               </View>
-              <View style={styles.refusedInfo}>
-                <Text style={styles.refusedTitle}>Order Refused</Text>
-                <Text style={styles.refusedText}>This order was refused by the patissiere.</Text>
+              <View style={styles.requestRow}>
+                <MaterialIcons name="place" size={16} color={PRIMARY} />
+                <Text style={styles.requestText} numberOfLines={2}>
+                  {order.deliveryAddress}
+                </Text>
               </View>
             </View>
-          ) : (
-            <View>
-              {STEPS.map((step, index) => {
-                const completed = index < currentStepIndex;
-                const active = index === currentStepIndex;
-                const inactive = index > currentStepIndex;
-                return (
-                  <View key={step.key} style={styles.stepRow}>
-                    <View style={styles.stepVisual}>
-                      <View
-                        style={[
-                          styles.stepDot,
-                          completed && styles.stepDotDone,
-                          active && styles.stepDotActive,
-                          inactive && styles.stepDotIdle,
-                        ]}
-                      >
-                        <MaterialIcons
-                          name={completed ? "check" : step.icon}
-                          size={14}
-                          color={completed || active ? "#fff" : SLATE_400}
-                        />
-                      </View>
-                      {index < STEPS.length - 1 ? (
-                        <View style={[styles.stepLine, (completed || active) && styles.stepLineDone]} />
-                      ) : null}
+          </View>
+        ) : null}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Order Progress</Text>
+          <View style={styles.timelineWrap}>
+            {STEPS.map((step, index) => {
+              const completed = index < currentStepIndex;
+              const active = index === currentStepIndex;
+              const isFuture = index > currentStepIndex;
+              return (
+                <View style={styles.stepRow} key={step.key}>
+                  <View style={styles.stepVisual}>
+                    <View
+                      style={[
+                        styles.stepDot,
+                        completed && styles.stepDotDone,
+                        active && styles.stepDotActive,
+                        isFuture && styles.stepDotFuture,
+                      ]}
+                    >
+                      {completed ? (
+                        <MaterialIcons name="check" size={12} color="#fff" />
+                      ) : active ? (
+                        <View style={styles.activeInnerDot} />
+                      ) : (
+                        <MaterialIcons name={step.icon} size={12} color={SLATE_400} />
+                      )}
                     </View>
-                    <View style={styles.stepContent}>
-                      <Text style={[styles.stepLabel, active && styles.stepLabelActive, inactive && styles.stepLabelIdle]}>
-                        {step.label}
-                      </Text>
-                      <Text style={[styles.stepTime, inactive && styles.stepTimeIdle]}>
-                        {active ? "In Progress" : completed ? formatDateTime(order.createdAt) : "Waiting"}
-                      </Text>
-                    </View>
+                    {index < STEPS.length - 1 ? (
+                      <View style={[styles.stepLine, (completed || active) && styles.stepLineDone]} />
+                    ) : null}
                   </View>
-                );
-              })}
-            </View>
-          )}
+                  <View style={styles.stepTextWrap}>
+                    <Text style={[styles.stepLabel, active && styles.stepLabelActive, isFuture && styles.stepLabelFuture]}>
+                      {step.label}
+                    </Text>
+                    <Text style={[styles.stepTime, isFuture && styles.stepTimeFuture]}>
+                      {active
+                        ? `${formatTimelineTime(order.createdAt)} - In progress`
+                        : completed
+                        ? formatTimelineTime(order.createdAt)
+                        : "Expected soon"}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })}
+          </View>
         </View>
 
-        <View style={styles.etaCard}>
-          <View style={styles.etaHead}>
-            <View>
-              <Text style={styles.etaTag}>Estimated Arrival</Text>
-              <Text style={styles.etaRange}>
-                {eta.start} - {eta.end}
-              </Text>
-            </View>
-            <View>
-              <Text style={styles.etaMinutes}>{eta.minutesLeft}</Text>
-              <Text style={styles.etaMinutesLabel}>mins left</Text>
-            </View>
+        <View style={styles.section}>
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionTitle}>Your Items</Text>
+            <Text style={styles.itemsCount}>{order.items.length} Items</Text>
           </View>
-
-          <View style={styles.progressWrap}>
-            <View style={[styles.progressValue, { width: `${shownProgress}%` }]} />
+          <View style={styles.itemsList}>
+            {order.items.map((item, idx) => (
+              <OrderItemCard
+                key={`${item.id}-${idx}`}
+                item={item}
+                product={productById[item.productId]}
+                fallbackTitle={idx === 0 ? firstTitle : `Product ${item.productId.slice(-6)}`}
+                showProductDescription={isPatissiereIncomingOrder}
+              />
+            ))}
           </View>
+        </View>
 
-          <View style={styles.driverBadge}>
-            <MaterialIcons name="person-pin-circle" size={20} color="#fff" />
-            <Text style={styles.driverText}>
-              {order.status === "delivering"
-                ? "Driver is on the way"
-                : order.status === "delivered"
-                ? "Order delivered successfully"
-                : "Order is being prepared"}
+        <View style={styles.totalCard}>
+          <PriceRow label="Subtotal" value={breakdown.subtotal} />
+          <View style={styles.priceRow}>
+            <Text style={styles.priceLabel}>Delivery Fee</Text>
+            <Text style={styles.priceValue}>0.00 EUR</Text>
+          </View>
+          <View style={styles.totalDivider} />
+          <PriceRow label="Total" value={breakdown.total} primary strong />
+        </View>
+
+        <View style={styles.actions}>
+          {showAcceptButton ? (
+            <Pressable style={styles.acceptAction} onPress={handleAcceptOrder} disabled={accepting}>
+              <MaterialIcons name="check-circle" size={18} color="#fff" />
+              <Text style={styles.acceptActionText}>{accepting ? "Accepting..." : "Accept Order"}</Text>
+            </Pressable>
+          ) : null}
+          {showCompleteButton ? (
+            <Pressable
+              style={styles.acceptAction}
+              onPress={async () => {
+                if (!order || accepting) return;
+                try {
+                  setAccepting(true);
+                  setActionError(null);
+                  const updated = await completeOrderApi(order.id);
+                  if (updated) {
+                    setOrder(updated);
+                  } else {
+                    await loadOrder();
+                  }
+                } catch (e: unknown) {
+                  const msg = e instanceof Error ? e.message : "Failed to complete order";
+                  setActionError(msg);
+                } finally {
+                  setAccepting(false);
+                }
+              }}
+              disabled={accepting}
+            >
+              <MaterialIcons name="task-alt" size={18} color="#fff" />
+              <Text style={styles.acceptActionText}>{accepting ? "Completing..." : "Mark as Completed"}</Text>
+            </Pressable>
+          ) : null}
+          {showPaymentButton ? (
+            <Pressable
+              style={styles.paymentAction}
+              onPress={() =>
+                router.push({
+                  pathname: "/(main)/payment",
+                  params: {
+                    orderId: order.id,
+                    total: String(Number(breakdown.total.toFixed(2))),
+                  },
+                })
+              }
+            >
+              <MaterialIcons name="payments" size={18} color="#fff" />
+              <Text style={styles.paymentActionText}>Pay Now</Text>
+            </Pressable>
+          ) : null}
+          <Pressable style={styles.primaryAction}>
+            <MaterialIcons name="chat-bubble-outline" size={18} color="#fff" />
+            <Text style={styles.primaryActionText}>
+              {authRole === "patissiere" ? "Contact Client" : "Contact Patissiere"}
             </Text>
-          </View>
-        </View>
-
-        <View style={styles.mapCard}>
-          <Image source={{ uri: MAP_IMAGE }} style={styles.mapImage} contentFit="cover" />
-          <View style={styles.mapOverlay} />
-          <View style={styles.mapBadge}>
-            <MaterialIcons name="map" size={14} color={PRIMARY} />
-            <Text style={styles.mapBadgeText}>View Live Map</Text>
-          </View>
+          </Pressable>
+          <Pressable style={styles.secondaryAction}>
+            <MaterialIcons name="receipt-long" size={18} color={SLATE_600} />
+            <Text style={styles.secondaryActionText}>Download Invoice</Text>
+          </Pressable>
+          {actionError ? <Text style={styles.actionErrorText}>{actionError}</Text> : null}
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
+function OrderItemCard({
+  item,
+  product,
+  fallbackTitle,
+  showProductDescription = false,
+}: {
+  item: ClientOrderItem;
+  product?: ProductPreview;
+  fallbackTitle: string;
+  showProductDescription?: boolean;
+}) {
+  const itemTotal = item.price * item.quantity;
+  const imageUri = product?.imageUri ?? FALLBACK_IMAGE;
+  const title = product?.title || fallbackTitle;
+  const colors = item.customizationDetails?.colors;
+  const garniture = item.customizationDetails?.garniture;
+  const message = item.customizationDetails?.message;
+
+  return (
+    <View style={styles.itemCard}>
+      <View style={styles.itemRow}>
+        <Image source={{ uri: imageUri }} style={styles.itemImage} contentFit="cover" />
+        <View style={{ flex: 1 }}>
+          <View style={styles.itemTopRow}>
+            <Text style={styles.itemTitle} numberOfLines={2}>
+              {title}
+            </Text>
+            <Text style={styles.itemPrice}>{itemTotal.toFixed(2)} EUR</Text>
+          </View>
+          <Text style={styles.itemQty}>Qty: {item.quantity}</Text>
+          {showProductDescription && product?.description ? (
+            <Text style={styles.itemDescription} numberOfLines={3}>
+              {product.description}
+            </Text>
+          ) : null}
+          {colors ? <TagLine tag="Flavors" value={colors} /> : null}
+          {garniture ? <TagLine tag="Garniture" value={garniture} /> : null}
+          {message ? <TagLine tag="Message" value={message} accent italic /> : null}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function TagLine({
+  tag,
+  value,
+  accent = false,
+  italic = false,
+}: {
+  tag: string;
+  value: string;
+  accent?: boolean;
+  italic?: boolean;
+}) {
+  return (
+    <View style={styles.tagLine}>
+      <View style={[styles.tagChip, accent && styles.tagChipAccent]}>
+        <Text style={[styles.tagChipText, accent && styles.tagChipTextAccent]}>{tag}</Text>
+      </View>
+      <Text style={[styles.tagValue, italic && styles.tagValueItalic]} numberOfLines={2}>
+        {value}
+      </Text>
+    </View>
+  );
+}
+
+function PriceRow({
+  label,
+  value,
+  strong = false,
+  primary = false,
+}: {
+  label: string;
+  value: number;
+  strong?: boolean;
+  primary?: boolean;
+}) {
+  return (
+    <View style={styles.priceRow}>
+      <Text style={[styles.priceLabel, strong && styles.priceStrong]}>{label}</Text>
+      <Text style={[styles.priceValue, strong && styles.priceStrong, primary && styles.pricePrimary]}>
+        {value.toFixed(2)} EUR
+      </Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BACKGROUND_LIGHT },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: SURFACE,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER_SUBTLE,
-  },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: PRIMARY_05,
-  },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: TEXT_PRIMARY },
-  content: { padding: 14, gap: 14, paddingBottom: 28 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 24 },
-  secondaryText: { color: SLATE_500, fontSize: 13, fontWeight: "600" },
-  errorText: { color: "#b91c1c", fontSize: 13, fontWeight: "600", textAlign: "center" },
+  content: { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 24 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 8, paddingHorizontal: 24 },
+  secondaryText: { fontSize: 13, color: SLATE_500, fontWeight: "600" },
+  errorText: { fontSize: 13, color: "#b91c1c", fontWeight: "600", textAlign: "center" },
   retryBtn: {
     marginTop: 8,
     backgroundColor: PRIMARY,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
   },
-  retryBtnText: { color: "#fff", fontWeight: "800", fontSize: 12 },
-  summaryCard: {
-    backgroundColor: SURFACE,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: `${PRIMARY}1A`,
-    padding: 10,
+  retryText: { color: "#fff", fontWeight: "800", fontSize: 12 },
+  header: {
     flexDirection: "row",
-    gap: 10,
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+    marginBottom: 4,
   },
-  summaryImage: { width: 72, height: 72, borderRadius: 10, backgroundColor: BORDER_SUBTLE },
-  summaryInfo: { flex: 1, justifyContent: "center" },
-  summaryTitle: { fontSize: 14, fontWeight: "800", color: TEXT_PRIMARY },
-  summarySub: { fontSize: 12, color: SLATE_500, marginTop: 1, fontWeight: "600" },
-  summaryCode: { fontSize: 11, color: PRIMARY, fontWeight: "800", marginTop: 3 },
-  summaryMeta: { fontSize: 11, color: SLATE_500, fontWeight: "600", marginTop: 2 },
-  statusCard: {
+  headerLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1, paddingRight: 8 },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: SURFACE,
-    borderRadius: 14,
-    padding: 14,
     borderWidth: 1,
     borderColor: BORDER_SUBTLE,
   },
-  statusTitle: { fontSize: 16, fontWeight: "800", color: TEXT_PRIMARY, marginBottom: 8 },
-  stepRow: { flexDirection: "row", gap: 10 },
+  headerSub: { fontSize: 12, color: SLATE_500, fontWeight: "600" },
+  headerCode: { fontSize: 20, color: TEXT_PRIMARY, fontWeight: "900" },
+  statusBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5, alignSelf: "flex-start" },
+  statusBadgeText: { fontSize: 10, fontWeight: "900", textTransform: "uppercase", letterSpacing: 0.8 },
+  deliveryCard: {
+    marginTop: 12,
+    backgroundColor: SURFACE,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: `${PRIMARY}14`,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  deliveryIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: `${PRIMARY}14`,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deliveryMeta: { fontSize: 10, color: SLATE_500, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.6 },
+  deliveryRange: { marginTop: 2, fontSize: 14, color: TEXT_PRIMARY, fontWeight: "800" },
+  section: { marginTop: 20 },
+  requestCard: {
+    backgroundColor: SURFACE,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: BORDER_SUBTLE,
+    padding: 12,
+    gap: 10,
+  },
+  requestRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  requestText: { flex: 1, fontSize: 12, color: TEXT_PRIMARY, fontWeight: "600" },
+  sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: TEXT_PRIMARY,
+    textTransform: "uppercase",
+    letterSpacing: 1.1,
+    marginBottom: 10,
+  },
+  itemsCount: { fontSize: 11, color: SLATE_500, fontWeight: "600", marginBottom: 10 },
+  timelineWrap: { gap: 0 },
+  stepRow: { flexDirection: "row", gap: 12 },
   stepVisual: { alignItems: "center" },
   stepDot: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 24,
+    height: 24,
+    borderRadius: 999,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 2,
-    borderColor: SLATE_200,
-    backgroundColor: "#fff",
+    backgroundColor: "#f1f5f9",
   },
-  stepDotDone: { backgroundColor: PRIMARY, borderColor: PRIMARY },
-  stepDotActive: { backgroundColor: PRIMARY, borderColor: PRIMARY },
-  stepDotIdle: { backgroundColor: "#fff", borderColor: SLATE_200 },
-  stepLine: { width: 2, height: 28, backgroundColor: SLATE_200 },
+  stepDotDone: { backgroundColor: PRIMARY },
+  stepDotActive: { backgroundColor: SURFACE, borderWidth: 2, borderColor: PRIMARY },
+  stepDotFuture: { backgroundColor: "#f1f5f9" },
+  activeInnerDot: { width: 8, height: 8, borderRadius: 999, backgroundColor: PRIMARY },
+  stepLine: { width: 2, height: 38, backgroundColor: "#e2e8f0" },
   stepLineDone: { backgroundColor: PRIMARY },
-  stepContent: { flex: 1, paddingTop: 3, paddingBottom: 7 },
-  stepLabel: { fontSize: 13, fontWeight: "700", color: TEXT_PRIMARY },
-  stepLabelActive: { color: PRIMARY, fontWeight: "800" },
-  stepLabelIdle: { color: SLATE_400 },
-  stepTime: { fontSize: 11, color: SLATE_500, marginTop: 1, fontWeight: "600" },
-  stepTimeIdle: { color: SLATE_400 },
-  etaCard: {
-    backgroundColor: PRIMARY,
+  stepTextWrap: { flex: 1, paddingTop: 2, paddingBottom: 12 },
+  stepLabel: { fontSize: 13, color: TEXT_PRIMARY, fontWeight: "800" },
+  stepLabelActive: { color: PRIMARY },
+  stepLabelFuture: { color: SLATE_400, fontWeight: "600" },
+  stepTime: { fontSize: 11, color: SLATE_500, marginTop: 2, fontWeight: "500" },
+  stepTimeFuture: { color: SLATE_400 },
+  itemsList: { gap: 10 },
+  itemCard: {
+    backgroundColor: SURFACE,
     borderRadius: 14,
-    padding: 14,
-  },
-  etaHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 10 },
-  etaTag: { color: "#ffffffC8", fontSize: 10, textTransform: "uppercase", fontWeight: "800", letterSpacing: 1.1 },
-  etaRange: { color: "#fff", fontSize: 22, fontWeight: "800", marginTop: 2 },
-  etaMinutes: { color: "#fff", textAlign: "right", fontSize: 30, fontWeight: "900", lineHeight: 30 },
-  etaMinutesLabel: { color: "#ffffffC8", fontSize: 10, textTransform: "uppercase", fontWeight: "700", textAlign: "right" },
-  progressWrap: {
-    width: "100%",
-    height: 8,
-    borderRadius: 999,
-    backgroundColor: "#ffffff55",
-    overflow: "hidden",
-  },
-  progressValue: { height: "100%", backgroundColor: "#fff", borderRadius: 999 },
-  driverBadge: {
-    marginTop: 10,
-    borderRadius: 10,
-    backgroundColor: "#ffffff22",
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  driverText: { flex: 1, color: "#fff", fontWeight: "600", fontSize: 12 },
-  mapCard: {
-    height: 154,
-    borderRadius: 14,
-    overflow: "hidden",
     borderWidth: 1,
     borderColor: BORDER_SUBTLE,
-    position: "relative",
+    padding: 12,
   },
-  mapImage: { width: "100%", height: "100%" },
-  mapOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: "#00000026" },
-  mapBadge: {
-    position: "absolute",
-    left: 10,
-    bottom: 10,
-    backgroundColor: SURFACE,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
+  itemRow: { flexDirection: "row", gap: 10 },
+  itemImage: { width: 74, height: 74, borderRadius: 10, backgroundColor: BORDER_SUBTLE },
+  itemTopRow: { flexDirection: "row", justifyContent: "space-between", gap: 8 },
+  itemTitle: { flex: 1, fontSize: 13, fontWeight: "800", color: TEXT_PRIMARY },
+  itemPrice: { fontSize: 13, fontWeight: "900", color: PRIMARY },
+  itemQty: { marginTop: 4, fontSize: 11, color: SLATE_500, fontWeight: "600" },
+  itemDescription: { marginTop: 5, fontSize: 11, color: SLATE_600, lineHeight: 16 },
+  tagLine: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 5 },
+  tagChip: {
+    backgroundColor: "#f1f5f9",
+    borderRadius: 5,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
-  mapBadgeText: { color: TEXT_PRIMARY, fontSize: 11, fontWeight: "800" },
-  refusedWrap: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: "#fef2f2",
-    borderWidth: 1,
-    borderColor: "#fecaca",
+  tagChipAccent: { backgroundColor: "#fdf2f8" },
+  tagChipText: { fontSize: 9, color: SLATE_600, fontWeight: "700" },
+  tagChipTextAccent: { color: PRIMARY },
+  tagValue: { flex: 1, fontSize: 11, color: SLATE_500, fontWeight: "500" },
+  tagValueItalic: { fontStyle: "italic" },
+  totalCard: {
+    marginTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: BORDER_SUBTLE,
+    paddingTop: 14,
+    gap: 9,
+  },
+  priceRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  priceLabel: { fontSize: 13, color: SLATE_500, fontWeight: "500" },
+  priceValue: { fontSize: 13, color: TEXT_PRIMARY, fontWeight: "600" },
+  totalDivider: { borderTopWidth: 1, borderTopColor: SLATE_200, borderStyle: "dashed", marginTop: 2, paddingTop: 2 },
+  priceStrong: { fontSize: 16, fontWeight: "900", color: TEXT_PRIMARY },
+  pricePrimary: { color: PRIMARY },
+  actions: { marginTop: 22, gap: 10 },
+  acceptAction: {
+    height: 50,
     borderRadius: 12,
-    padding: 10,
-  },
-  refusedIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "#fee2e2",
+    backgroundColor: "#15803d",
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
   },
-  refusedInfo: { flex: 1 },
-  refusedTitle: { fontSize: 13, fontWeight: "800", color: "#991b1b" },
-  refusedText: { fontSize: 11, color: "#b91c1c", marginTop: 1, fontWeight: "600" },
+  acceptActionText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  paymentAction: {
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#0f766e",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  paymentActionText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  primaryAction: {
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: PRIMARY,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  primaryActionText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  secondaryAction: {
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: SLATE_200,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  secondaryActionText: { color: SLATE_600, fontSize: 14, fontWeight: "800" },
+  actionErrorText: { color: "#b91c1c", fontSize: 12, fontWeight: "600", textAlign: "center" },
 });

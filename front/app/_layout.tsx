@@ -7,6 +7,7 @@ import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import "react-native-reanimated";
 import * as SplashScreen from "expo-splash-screen";
+import { getStripeModuleSafe } from "@/lib/stripe-safe";
 
 import { store, persistor } from "@/store";
 import { AuthModalProvider } from "@/contexts/AuthModalContext";
@@ -29,31 +30,43 @@ export default function RootLayout() {
     return () => clearTimeout(timer);
   }, []);
 
+  const stripeModule = getStripeModuleSafe();
+  const StripeProvider = stripeModule?.StripeProvider;
+  const publishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
+
+  const appTree = (
+    <ThemeProvider value={DefaultTheme}>
+      <AuthModalProvider>
+        {showBrandSplash ? (
+          <>
+            <AppSplashScreen />
+            <StatusBar style="dark" />
+          </>
+        ) : (
+          <>
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="(auth)" />
+              <Stack.Screen name="(main)" />
+              <Stack.Screen name="(client)" />
+              <Stack.Screen name="(patissiere)" />
+              <Stack.Screen name="(livreur)" />
+            </Stack>
+            <StatusBar style="dark" />
+          </>
+        )}
+      </AuthModalProvider>
+    </ThemeProvider>
+  );
+
   return (
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <ThemeProvider value={DefaultTheme}>
-          <AuthModalProvider>
-            {showBrandSplash ? (
-              <>
-                <AppSplashScreen />
-                <StatusBar style="dark" />
-              </>
-            ) : (
-              <>
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="index" />
-                  <Stack.Screen name="(auth)" />
-                  <Stack.Screen name="(main)" />
-                  <Stack.Screen name="(client)" />
-                  <Stack.Screen name="(patissiere)" />
-                  <Stack.Screen name="(livreur)" />
-                </Stack>
-                <StatusBar style="dark" />
-              </>
-            )}
-          </AuthModalProvider>
-        </ThemeProvider>
+        {StripeProvider && publishableKey ? (
+          <StripeProvider publishableKey={publishableKey}>{appTree}</StripeProvider>
+        ) : (
+          appTree
+        )}
       </PersistGate>
     </Provider>
   );

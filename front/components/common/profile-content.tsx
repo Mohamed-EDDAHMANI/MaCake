@@ -22,7 +22,9 @@ import type { Product } from "@/store/features/catalog";
 import { toggleLike } from "@/store/features/catalog";
 import { toggleFollow } from "@/store/features/follow";
 import { toggleProfileLike } from "@/store/features/profileLike";
+import { getPatissiereOrdersApi } from "@/store/features/order/orderApi";
 import { buildPhotoUrl, getProductDetailPath } from "@/lib/utils";
+import { WalletTab } from "@/components/client/wallet-tab";
 import {
   PRIMARY,
   BACKGROUND_LIGHT,
@@ -40,7 +42,13 @@ import {
 
 const COVER_HEIGHT = 256;
 const AVATAR_SIZE = 128;
-const TAB_NAMES = ["Portfolio", "Reviews", "Services", "About"] as const;
+const PATISSIERE_TABS = [
+  { name: "Portfolio" as const, icon: "photo-library" as const },
+  { name: "Wallet" as const, icon: "account-balance-wallet" as const },
+  { name: "Reviews" as const, icon: "star" as const },
+  { name: "Services" as const, icon: "miscellaneous-services" as const },
+];
+type PatissiereTabName = (typeof PATISSIERE_TABS)[number]["name"];
 
 // Placeholder cover and portfolio images (matching HTML style)
 const DEFAULT_COVER =
@@ -145,8 +153,9 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
   const userPhoto = buildPhotoUrl(profileUser?.photo ?? null);
   const coverPhoto = buildPhotoUrl(profileUser?.coverPhoto ?? null);
 
-  const [activeTab, setActiveTab] = useState<(typeof TAB_NAMES)[number]>("Portfolio");
+  const [activeTab, setActiveTab] = useState<PatissiereTabName>("Portfolio");
   const [optionsVisible, setOptionsVisible] = useState(false);
+  const [ordersCount, setOrdersCount] = useState<number>(0);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -154,7 +163,15 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
   };
 
   const roleLabel = profileUser?.role ? String(profileUser.role).replace(/_/g, " ") : "";
-  const subtitle = [roleLabel, "MaCack"].filter(Boolean).join(" • ");
+  const isPatissiereProfile = String(profileUser?.role ?? "").toUpperCase() === "PATISSIERE";
+  const subtitle = [roleLabel, "MaCake", profileUser?.city ?? null].filter(Boolean).join(" • ");
+
+  useEffect(() => {
+    if (!isOwnProfile || !isPatissiereProfile || !authUser?.id) return;
+    getPatissiereOrdersApi()
+      .then((orders) => setOrdersCount(orders?.length ?? 0))
+      .catch(() => setOrdersCount(0));
+  }, [isOwnProfile, isPatissiereProfile, authUser?.id]);
 
   return (
     <View style={styles.safe}>
@@ -210,14 +227,17 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
 
         {/* Profile block (overlap) */}
         <View style={styles.profileBlock}>
-          <View style={styles.avatarRing}>
-            {userPhoto ? (
-              <Image source={{ uri: userPhoto }} style={styles.avatarImg} contentFit="cover" />
-            ) : (
-              <View style={styles.avatarPlaceholder}>
-                <MaterialIcons name="person" size={56} color={PRIMARY} />
-              </View>
-            )}
+          <View style={styles.avatarOuter}>
+            <View style={styles.avatarRing}>
+              {userPhoto ? (
+                <Image source={{ uri: userPhoto }} style={styles.avatarImg} contentFit="cover" />
+              ) : (
+                <View style={styles.avatarPlaceholder}>
+                  <MaterialIcons name="person" size={56} color={PRIMARY} />
+                </View>
+              )}
+            </View>
+            {isOwnProfile ? <View style={styles.availabilityDot} /> : null}
           </View>
           <Text style={styles.name}>{profileUser?.name ?? "User"}</Text>
           <Text style={styles.subtitle}>{subtitle || profileUser?.email}</Text>
@@ -260,21 +280,17 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
                   </Text>
                   <Text style={styles.statMuted}>Followers</Text>
                 </View>
-                <View style={styles.statDot} />
-                <View style={styles.statItem}>
-                  <Text style={styles.statBold}>
-                    {(() => {
-                      const count =
-                        isOwnProfile && profileStats != null
-                          ? profileStats.likesCount ?? 0
-                          : profileLikeStatus?.count ?? 0;
-                      return count >= 1000
-                        ? `${(count / 1000).toFixed(1)}k`
-                        : String(count);
-                    })()}
-                  </Text>
-                  <Text style={styles.statMuted}>Likes</Text>
-                </View>
+                {isPatissiereProfile ? (
+                  <>
+                    <View style={styles.statDot} />
+                    <View style={styles.statItem}>
+                      <Text style={styles.statBold}>
+                        {ordersCount >= 1000 ? `${(ordersCount / 1000).toFixed(1)}k` : String(ordersCount)}
+                      </Text>
+                      <Text style={styles.statMuted}>Orders</Text>
+                    </View>
+                  </>
+                ) : null}
               </>
             )}
           </View>
@@ -376,31 +392,30 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
           ) : null}
         </View>
 
-        {/* Tabs */}
+        {/* Tabs: Portfolio, Wallet, Reviews (with icons) */}
         <View style={styles.tabsWrap}>
-          {TAB_NAMES.map((tab) => (
-            <Pressable
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
-            >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-            </Pressable>
-          ))}
+          {PATISSIERE_TABS.map(({ name, icon }) => {
+            const isActive = activeTab === name;
+            return (
+              <Pressable
+                key={name}
+                onPress={() => setActiveTab(name)}
+                style={[styles.tab, isActive && styles.tabActive]}
+              >
+                <MaterialIcons
+                  name={icon}
+                  size={22}
+                  color={isActive ? PRIMARY : SLATE_400}
+                />
+                <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{name}</Text>
+              </Pressable>
+            );
+          })}
         </View>
 
-        {/* Tab content: Portfolio = grid, About = bio, others placeholder */}
-        {activeTab === "About" ? (
-          <View style={styles.aboutTabContent}>
-            <Text style={styles.aboutLabel}>Bio</Text>
-            {profileUser?.description ? (
-              <Text style={styles.aboutBio}>{profileUser.description}</Text>
-            ) : (
-              <Text style={styles.aboutBioEmpty}>
-                {isOwnProfile ? "Add a bio in Edit profile." : "No bio yet."}
-              </Text>
-            )}
-          </View>
+        {/* Tab content: Portfolio = grid, Wallet = wallet, Reviews/Services = placeholder */}
+        {activeTab === "Wallet" ? (
+          <WalletTab />
         ) : activeTab === "Portfolio" ? (
         <View style={styles.gridWrap}>
           {portfolioProducts.length === 0 ? (
@@ -453,12 +468,14 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
         </View>
         ) : (
           <View style={styles.aboutTabContent}>
-            <Text style={styles.portfolioEmpty}>Coming soon</Text>
+            <Text style={styles.portfolioEmpty}>
+              {activeTab === "Reviews" ? "Reviews coming soon" : "Services coming soon"}
+            </Text>
           </View>
         )}
 
         {/* Log out (optional quick action for own profile) */}
-        {isOwnProfile ? (
+        {isOwnProfile && !isPatissiereProfile ? (
           <Pressable style={styles.logoutBtn} onPress={handleLogout}>
             <MaterialIcons name="logout" size={22} color="#ef4444" />
             <Text style={styles.logoutText}>Log Out</Text>
@@ -499,17 +516,21 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
                   <MaterialIcons name="settings" size={20} color={TEXT_PRIMARY} />
                   <Text style={styles.optionText}>Settings</Text>
                 </Pressable>
-                <View style={styles.optionDivider} />
-                <Pressable
-                  style={styles.optionRow}
-                  onPress={() => {
-                    setOptionsVisible(false);
-                    handleLogout();
-                  }}
-                >
-                  <MaterialIcons name="logout" size={20} color="#ef4444" />
-                  <Text style={[styles.optionText, { color: "#ef4444" }]}>Log out</Text>
-                </Pressable>
+                {!isPatissiereProfile ? (
+                  <>
+                    <View style={styles.optionDivider} />
+                    <Pressable
+                      style={styles.optionRow}
+                      onPress={() => {
+                        setOptionsVisible(false);
+                        handleLogout();
+                      }}
+                    >
+                      <MaterialIcons name="logout" size={20} color="#ef4444" />
+                      <Text style={[styles.optionText, { color: "#ef4444" }]}>Log out</Text>
+                    </Pressable>
+                  </>
+                ) : null}
               </>
             ) : (
               <>
@@ -576,6 +597,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     zIndex: 20,
   },
+  avatarOuter: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    position: "relative",
+  },
   avatarRing: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
@@ -597,6 +623,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: PRIMARY_TINT,
+  },
+  availabilityDot: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#22c55e",
+    borderWidth: 2.5,
+    borderColor: SURFACE,
   },
   name: {
     fontSize: 24,
@@ -736,6 +773,9 @@ const styles = StyleSheet.create({
     borderBottomColor: BORDER_SUBTLE,
   },
   tab: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     paddingBottom: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 2,

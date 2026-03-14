@@ -5,6 +5,14 @@ export const ORDERS_ENDPOINTS = [
     roles: ['client', 'admin'],
   },
   {
+    pattern: /^\/order\/accept\/.*$/,
+    roles: ['patissiere', 'admin'],
+  },
+  {
+    pattern: /^\/order\/complete\/.*$/,
+    roles: ['patissiere', 'admin'],
+  },
+  {
     pattern: /^\/orders\/find-all$/,
     roles: ['client', 'patissiere', 'admin'],
   },

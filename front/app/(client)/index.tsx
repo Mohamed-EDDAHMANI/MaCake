@@ -123,7 +123,7 @@ export default function ClientExploreScreen() {
           <Pressable style={styles.iconBtn} hitSlop={12} onPress={() => setSidebarOpen(true)}>
             <MaterialIcons name="menu" size={28} color={PRIMARY} />
           </Pressable>
-          <Text style={styles.logo}>MaCack</Text>
+          <Text style={styles.logo}>MaCake</Text>
           <Pressable style={[styles.iconBtn, styles.avatarBtn]} hitSlop={12} onPress={openPopup}>
             {userPhoto ? (
               <Image source={{ uri: userPhoto }} style={styles.avatarImg} contentFit="cover" />

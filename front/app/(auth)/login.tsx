@@ -97,7 +97,7 @@ export default function LoginScreen() {
           >
             <MaterialIcons name="close" size={24} color={TEXT_PRIMARY} />
           </Pressable>
-          <Text style={styles.topBarTitle}>MaCack</Text>
+          <Text style={styles.topBarTitle}>MaCake</Text>
           <View style={styles.closeBtn} />
         </View>
 
@@ -129,7 +129,7 @@ export default function LoginScreen() {
                   <View style={styles.inputWrap}>
                     <MaterialIcons name="mail-outline" size={22} color={SLATE_400} style={styles.inputIcon} />
                     <TextInput
-                      placeholder="chef@macack.com"
+                      placeholder="chef@macake.com"
                       placeholderTextColor={SLATE_400}
                       value={email}
                       onChangeText={setEmail}

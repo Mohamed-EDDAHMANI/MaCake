@@ -9,6 +9,8 @@ import {
   OrderStatusHistory,
   OrderStatusHistoryDocument,
 } from '../../infrastructure/database/schemas/order-status-history.schema';
+import { ConfigService } from '@nestjs/config';
+import { io } from 'socket.io-client';
 
 @Injectable()
 export class OrderService {
@@ -56,7 +58,33 @@ export class OrderService {
     @InjectModel(OrderItem.name) private readonly orderItemModel: Model<OrderItemDocument>,
     @InjectModel(OrderStatusHistory.name)
     private readonly orderStatusHistoryModel: Model<OrderStatusHistoryDocument>,
+    private readonly configService: ConfigService,
   ) { }
+
+  /**
+   * Emit websocket event to gateway when order status changes.
+   */
+  private emitOrderStatusChanged(orderId: string, status: OrderStatus) {
+    try {
+      const baseUrl =
+        this.configService.get<string>('GATEWAY_WS_URL') ||
+        // Docker service name for gateway on the compose network
+        'http://gateway:3000/orders';
+
+      const socket = io(baseUrl, {
+        transports: ['websocket'],
+      });
+
+      socket.emit('order.status.changed', { orderId, status });
+
+      // Best-effort: disconnect shortly after emitting
+      setTimeout(() => {
+        socket.disconnect();
+      }, 500);
+    } catch (error: any) {
+      this.logger.warn(`Failed to emit order status websocket event: ${error?.message ?? 'unknown error'}`);
+    }
+  }
 
   async create(createOrderDto: CreateOrderDto) {
     this.logger.log(`Creating order for client ${createOrderDto.clientId}`);
@@ -187,6 +215,105 @@ export class OrderService {
     return this.findAll(userId, 'patissiere');
   }
 
+  async acceptOrder(orderId: string, userId: string) {
+    if (!orderId) {
+      throw new BadRequestException('Missing order id');
+    }
+    if (!Types.ObjectId.isValid(orderId)) {
+      throw new BadRequestException('Invalid order id');
+    }
+    if (!userId) {
+      throw new BadRequestException('Missing authenticated user id');
+    }
+
+    const order = await this.orderModel.findOne({
+      _id: new Types.ObjectId(orderId),
+      patissiereId: userId,
+    });
+
+    if (!order) {
+      return {
+        success: false,
+        message: 'Order not found',
+        data: null,
+      };
+    }
+
+    if (order.status !== OrderStatus.PENDING) {
+      return {
+        success: true,
+        message: 'Order already processed',
+        data: await this.mapOrderDocument(order as any),
+      };
+    }
+
+    order.status = OrderStatus.ACCEPTED;
+    await order.save();
+
+    await this.orderStatusHistoryModel.create({
+      orderId: order._id,
+      status: OrderStatus.ACCEPTED,
+      changedAt: new Date(),
+    });
+
+    return {
+      success: true,
+      message: 'Order accepted successfully',
+      data: await this.mapOrderDocument(order as any),
+    };
+  }
+
+  async completeOrder(orderId: string, userId: string) {
+    if (!orderId) {
+      throw new BadRequestException('Missing order id');
+    }
+    if (!Types.ObjectId.isValid(orderId)) {
+      throw new BadRequestException('Invalid order id');
+    }
+    if (!userId) {
+      throw new BadRequestException('Missing authenticated user id');
+    }
+
+    const order = await this.orderModel.findOne({
+      _id: new Types.ObjectId(orderId),
+      patissiereId: userId,
+    });
+
+    if (!order) {
+      return {
+        success: false,
+        message: 'Order not found',
+        data: null,
+      };
+    }
+
+    // Only allow completing from preparing state to avoid skipping steps.
+    if (order.status !== OrderStatus.PREPARING) {
+      return {
+        success: true,
+        message: 'Order already completed or in a later state',
+        data: await this.mapOrderDocument(order as any),
+      };
+    }
+
+    order.status = OrderStatus.COMPLETED;
+    await order.save();
+
+    await this.orderStatusHistoryModel.create({
+      orderId: order._id,
+      status: OrderStatus.COMPLETED,
+      changedAt: new Date(),
+    });
+
+    this.emitOrderStatusChanged(String(order._id), OrderStatus.COMPLETED);
+
+    return {
+      success: true,
+      message: 'Order marked as completed successfully',
+      data: await this.mapOrderDocument(order as any),
+    };
+  }
+
   async findOne(orderId: string, userId: string, role: string) {
     if (!orderId) {
       throw new BadRequestException('Missing order id');
@@ -215,6 +342,61 @@ export class OrderService {
     return {
       success: true,
       message: 'Order fetched successfully',
+      data: await this.mapOrderDocument(order as any),
+    };
+  }
+
+  async markPaymentCompleted(orderId: string, clientId: string) {
+    if (!orderId) {
+      throw new BadRequestException('Missing order id');
+    }
+    if (!Types.ObjectId.isValid(orderId)) {
+      throw new BadRequestException('Invalid order id');
+    }
+    if (!clientId) {
+      throw new BadRequestException('Missing client id');
+    }
+
+    const order = await this.orderModel.findOne({
+      _id: new Types.ObjectId(orderId),
+      clientId,
+    });
+
+    if (!order) {
+      return {
+        success: false,
+        message: 'Order not found',
+        data: null,
+      };
+    }
+
+    // Idempotent: if payment already reflected in later states, keep current state.
+    if (
+      order.status === OrderStatus.PREPARING ||
+      order.status === OrderStatus.DELIVERING ||
+      order.status === OrderStatus.DELIVERED
+    ) {
+      return {
+        success: true,
+        message: 'Order already updated after payment',
+        data: await this.mapOrderDocument(order as any),
+      };
+    }
+
+    order.status = OrderStatus.PREPARING;
+    await order.save();
+
+    await this.orderStatusHistoryModel.create({
+      orderId: order._id,
+      status: OrderStatus.PREPARING,
+      changedAt: new Date(),
+    });
+
+    this.emitOrderStatusChanged(String(order._id), OrderStatus.PREPARING);
+
+    return {
+      success: true,
+      message: 'Order payment marked successfully',
       data: await this.mapOrderDocument(order as any),
     };
   }

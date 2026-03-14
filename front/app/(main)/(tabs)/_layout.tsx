@@ -17,7 +17,8 @@ export default function TabsLayout() {
   const { showAuthModal } = useAuthModal();
 
   const isPatissiere = isAuthenticated && role === "PATISSIERE";
-  const showDashboard = isAuthenticated && role === "LIVREUR";
+  // Dashboard for livreur is accessed via sidebar "Work space" (separate screen), not as a tab
+  const showDashboard = false;
 
   const screenOptions = getSharedTabBarScreenOptions();
 

@@ -15,9 +15,11 @@ export default function MainLayout() {
       initialRouteName="(tabs)"
     >
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="workspace" options={{ title: "Work space" }} />
       <Stack.Screen name="product/[id]" options={{ title: "Product" }} />
       <Stack.Screen name="profile/[id]" options={{ title: "Profile" }} />
       <Stack.Screen name="order/[id]" options={{ title: "Order" }} />
+      <Stack.Screen name="delivery-order/[id]" options={{ title: "Delivery Request" }} />
       <Stack.Screen name="checkout" options={{ title: "Checkout" }} />
     </Stack>
   );

@@ -93,7 +93,7 @@ export default function RegisterScreen() {
   return (
     <SafeAreaView className="flex-1" style={{ backgroundColor: BACKGROUND_LIGHT }} edges={["top"]}>
       <RegisterHeader
-        title="Create MaCack Account"
+        title="Create MaCake Account"
         onBack={step === 2 ? () => setStep(1) : undefined}
       />
       <ProgressDots currentStep={step} totalSteps={2} />
@@ -105,7 +105,7 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <Text className="text-slate-900 text-3xl font-bold tracking-tight text-center pb-2 pt-2">
-            Join the MaCack community
+            Join the MaCake community
           </Text>
           <Text className="text-center text-sm mb-8" style={{ color: SLATE_500 }}>
             The premium marketplace for exquisite home-baked pastries.
