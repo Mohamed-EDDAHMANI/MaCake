@@ -8,6 +8,10 @@ export interface EstimationItem {
   userRole: "client" | "delivery";
   status: "pending" | "confirmed";
   createdBy?: string | null;
+  /** User id of the delivery who accepted this estimation (for client estimations). */
+  acceptedBy?: string | null;
+  /** When the client paid the delivery fee for this estimation. */
+  paidAt?: string | null;
   createdAt: string;
 }
 
@@ -102,4 +106,10 @@ export async function getEstimatedEstimationsForDeliveryApi(): Promise<
 > {
   const res = await api.get("/s3/estimation/find-estimated-delivery");
   return res.data?.data ?? [];
+}
+
+/** Mark estimation as paid (client paid the delivery fee). Call after delivery payment success. */
+export async function markEstimationPaidApi(estimationId: string): Promise<{ success: boolean; data?: EstimationItem }> {
+  const res = await api.post(`/s3/estimation/mark-paid/${estimationId}`);
+  return res.data ?? {};
 }

@@ -12,6 +12,7 @@ export {
   confirmEstimationApi,
   getAcceptedEstimationsForDeliveryApi,
   getEstimatedEstimationsForDeliveryApi,
+  markEstimationPaidApi,
 } from "./estimationApi";
 export type {
   EstimationItem,

@@ -54,4 +54,16 @@ export class EstimationController {
     const userId = payload?.user?.sub ?? '';
     return this.estimationService.findEstimatedDeliveryEstimations(userId);
   }
+
+  @MessagePattern(ORDERS_PATTERNS.ESTIMATION_MARK_PAID)
+  markEstimationPaid(@Payload() payload: { params: { id: string } }) {
+    const estimationId = payload?.params?.id ?? (payload as any)?.params?.estimationId ?? '';
+    return this.estimationService.markEstimationPaid(estimationId);
+  }
+
+  @MessagePattern(ORDERS_PATTERNS.ESTIMATION_FIND_ONE)
+  findEstimationById(@Payload() payload: { params: { id: string } }) {
+    const estimationId = payload?.params?.id ?? (payload as any)?.params?.estimationId ?? '';
+    return this.estimationService.findEstimationById(estimationId);
+  }
 }

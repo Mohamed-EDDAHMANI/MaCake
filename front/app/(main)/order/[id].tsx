@@ -29,12 +29,14 @@ import {
 import { fetchProductByIdApi } from "@/store/features/catalog/catalogApi";
 import { getProfileById } from "@/store/features/auth/authApi";
 import type { AuthUser } from "@/store/features/auth/authSlice";
+import { getEstimationsByOrderIdApi } from "@/store/features/estimation/estimationApi";
 import { buildPhotoUrl, getProfilePath } from "@/lib/utils";
 import { useAppSelector, useAppDispatch } from "@/store/hooks";
 import { getOrderSocket } from "@/lib/order-socket";
 import { openEstimationPanel, closeEstimationPanel } from "@/store/features/estimation";
 import { OrderEstimationSection } from "@/components/order/OrderEstimationSection";
 import { EstimationCreateModal } from "@/components/order/EstimationCreateModal";
+import { OrderRatingModal, type DeliveryForRating } from "@/components/order/OrderRatingModal";
 
 type TimelineStep = "pending" | "accepted" | "payment" | "preparing" | "completed" | "delivering" | "delivered";
 
@@ -54,7 +56,7 @@ const STEPS: Array<{ key: TimelineStep; label: string; icon: keyof typeof Materi
   { key: "preparing", label: "Preparing your Box", icon: "adjust" },
   { key: "completed", label: "Order Completed", icon: "task-alt" },
   { key: "delivering", label: "Out for Delivery", icon: "local-shipping" },
-  { key: "delivered", label: "Delivered", icon: "flag" },
+  { key: "delivered", label: "Delivered", icon: "check-circle" },
 ];
 
 const STEP_INDEX: Record<TimelineStep | "refused", number> = {
@@ -124,6 +126,8 @@ export default function OrderDetailsScreen() {
   const [accepting, setAccepting] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [estimationsRefresh, setEstimationsRefresh] = useState(0);
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [deliveryForRating, setDeliveryForRating] = useState<DeliveryForRating | null>(null);
   const authUserId = useAppSelector((state) => state.auth.user?.id ?? "");
   const authRole = (useAppSelector((state) => state.auth.user?.role) ?? "").toLowerCase();
   const dispatch = useAppDispatch();
@@ -229,6 +233,38 @@ export default function OrderDetailsScreen() {
     return { subtotal, total };
   }, [order]);
 
+  // Load delivery for rating when modal is open (must be before any conditional return)
+  useEffect(() => {
+    if (!showRatingModal || !order || order.clientId !== authUserId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const estimations = await getEstimationsByOrderIdApi(order.id);
+        if (cancelled) return;
+        const clientConfirmed = estimations.find(
+          (e) => e.userRole === "client" && e.status === "confirmed" && e.acceptedBy
+        );
+        if (clientConfirmed?.acceptedBy) {
+          const res = await getProfileById(clientConfirmed.acceptedBy);
+          if (cancelled) return;
+          const user = res?.data?.user;
+          if (user) {
+            setDeliveryForRating({
+              userId: user.id,
+              name: user.name ?? "Delivery",
+              photo: user.photo ? buildPhotoUrl(user.photo) : null,
+            });
+          }
+        }
+      } catch {
+        // Delivery section will stay hidden; modal still works
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [showRatingModal, order?.id, authUserId]);
+
   if (loading) {
     return (
       <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -265,6 +301,14 @@ export default function OrderDetailsScreen() {
   const isClientOrderCompleted = order.clientId === authUserId && order.status === "completed";
   const showDeliveredByClientButton = isClientOrderCompleted;
   const showStartDeliveryButton = isClientOrderCompleted;
+  const showRatingButton =
+    order.status === "delivered" && order.clientId === authUserId;
+
+  const handleOpenRatingModal = () => {
+    if (!order) return;
+    setDeliveryForRating(null);
+    setShowRatingModal(true);
+  };
 
   const handleAcceptOrder = async () => {
     if (!order || accepting) return;
@@ -303,11 +347,13 @@ export default function OrderDetailsScreen() {
           </View>
         </View>
 
-        {(order.status === "completed" || order.status === "delivering") && order.clientId === authUserId ? (
+        {(order.status === "completed" || order.status === "delivering" || order.status === "delivered") && order.clientId === authUserId ? (
           <OrderEstimationSection
             orderId={order.id}
             refetchTrigger={estimationsRefresh}
             isClient={true}
+            orderTotal={breakdown.total}
+            orderStatus={order.status}
           />
         ) : null}
 
@@ -373,9 +419,12 @@ export default function OrderDetailsScreen() {
           <Text style={styles.sectionTitle}>Order Progress</Text>
           <View style={styles.timelineWrap}>
             {STEPS.map((step, index) => {
-              const completed = index < currentStepIndex;
-              const active = index === currentStepIndex;
-              const isFuture = index > currentStepIndex;
+              const isDeliveredStep = step.key === "delivered";
+              const completed =
+                index < currentStepIndex ||
+                (order.status === "delivered" && isDeliveredStep);
+              const active = index === currentStepIndex && order.status !== "delivered";
+              const isFuture = index > currentStepIndex && !(order.status === "delivered" && isDeliveredStep);
               return (
                 <View style={styles.stepRow} key={step.key}>
                   <View style={styles.stepVisual}>
@@ -536,6 +585,15 @@ export default function OrderDetailsScreen() {
               </Pressable>
             </View>
           ) : null}
+          {showRatingButton ? (
+            <Pressable
+              style={styles.ratingAction}
+              onPress={handleOpenRatingModal}
+            >
+              <MaterialIcons name="star" size={18} color="#fff" />
+              <Text style={styles.ratingActionText}>Rate order</Text>
+            </Pressable>
+          ) : null}
           <Pressable style={styles.primaryAction}>
             <MaterialIcons name="chat-bubble-outline" size={18} color="#fff" />
             <Text style={styles.primaryActionText}>
@@ -556,6 +614,24 @@ export default function OrderDetailsScreen() {
         onSuccess={() => {
           setEstimationsRefresh((k) => k + 1);
           loadOrder();
+        }}
+      />
+      <OrderRatingModal
+        visible={showRatingModal}
+        order={order}
+        productById={productById}
+        patissiereId={order.patissiereId}
+        patissiereName={otherParty?.name}
+        patissierePhoto={otherParty?.photo ? buildPhotoUrl(otherParty.photo) : null}
+        clientId={authUserId}
+        delivery={deliveryForRating}
+        onClose={() => {
+          setShowRatingModal(false);
+          setDeliveryForRating(null);
+        }}
+        onSuccess={() => {
+          setShowRatingModal(false);
+          setDeliveryForRating(null);
         }}
       />
     </SafeAreaView>
@@ -866,6 +942,16 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     flexShrink: 1,
   },
+  ratingAction: {
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#f59e0b",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  ratingActionText: { color: "#fff", fontSize: 14, fontWeight: "800" },
   primaryAction: {
     height: 50,
     borderRadius: 12,

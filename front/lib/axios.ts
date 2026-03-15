@@ -31,7 +31,7 @@ function resolveBaseUrl(): string {
   if (envUrl) return envUrl;
 
   // 3) Platform-specific defaults (emulator / web)
-  const LAN_IP = "192.168.3.142"; // IP dyal PC dyalek
+  const LAN_IP = "192.168.1.7"; // IP dyal PC dyalek
 
   if (Platform.OS === "android") {
     return `http://${LAN_IP}:${DEFAULT_PORT}`;

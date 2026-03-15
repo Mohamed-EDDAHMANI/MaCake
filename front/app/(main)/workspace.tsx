@@ -25,8 +25,10 @@ import {
   SLATE_500,
   SLATE_600,
   PRIMARY,
+  PRIMARY_05,
   SURFACE,
   BORDER,
+  BORDER_SUBTLE,
 } from "@/constants/colors";
 import { buildWorkspaceMapHtml, OSM_DEFAULT, type MapMarker } from "@/lib/workspace-map-html";
 import { buildPhotoUrl } from "@/lib/utils";
@@ -83,6 +85,9 @@ const TAB_ICONS: Record<TabKey, keyof typeof MaterialIcons.glyphMap> = {
 const COLLAPSED_HEIGHT = 100;
 const SPRING_CONFIG = { damping: 20, stiffness: 200 };
 
+const FALLBACK_ITEM_IMAGE =
+  "https://images.unsplash.com/photo-1578985545062-69928b1d9587?q=80&w=200&auto=format&fit=crop";
+
 export type WorkspaceOrderItem = {
   id: string;
   estimationId?: string;
@@ -91,10 +96,18 @@ export type WorkspaceOrderItem = {
   rating: string;
   tag: string;
   patissiereName: string;
+  patissierePhoto: string | null;
+  deliveryName: string;
+  deliveryPhoto: string | null;
   price: string;
   distance: string;
   items: string;
+  itemImageUrls: string[];
   highlighted: boolean;
+  /** Payment status for delivery to see on the card */
+  paymentStatus: "Paid" | "Not paid yet";
+  /** Order status (e.g. to show Done when delivered in Accepted tab) */
+  orderStatus?: string;
 };
 
 function BottomOrdersSheet({
@@ -220,17 +233,58 @@ function BottomOrdersSheet({
                           {order.rating} • {order.tag}
                         </Text>
                       </View>
-                      {order.patissiereName ? (
-                        <Text style={styles.patissiereFrom} numberOfLines={1}>
-                          From: {order.patissiereName}
-                        </Text>
-                      ) : null}
                     </View>
                   </View>
                   <View style={styles.orderRight}>
                     <Text style={styles.orderPrice}>{order.price}</Text>
                     <Text style={styles.orderDistance}>{order.distance}</Text>
                   </View>
+                </View>
+                {order.itemImageUrls.length > 0 ? (
+                  <View style={styles.itemThumbnailsRow}>
+                    {order.itemImageUrls.slice(0, 4).map((uri, idx) => (
+                      <Image key={`${order.id}-img-${idx}`} source={{ uri }} style={styles.itemThumb} />
+                    ))}
+                  </View>
+                ) : null}
+                <View style={styles.patissiereDeliveryRow}>
+                  {order.patissierePhoto ? (
+                    <Image source={{ uri: buildPhotoUrl(order.patissierePhoto)! }} style={styles.smallAvatar} />
+                  ) : (
+                    <View style={[styles.smallAvatar, styles.smallAvatarPlaceholder]}>
+                      <MaterialIcons name="store" size={14} color={PRIMARY} />
+                    </View>
+                  )}
+                  <Text style={styles.patissiereFrom} numberOfLines={1}>
+                    From: {order.patissiereName}
+                  </Text>
+                  <View style={styles.deliveryChip}>
+                    {order.deliveryPhoto ? (
+                      <Image source={{ uri: buildPhotoUrl(order.deliveryPhoto)! }} style={styles.smallAvatar} />
+                    ) : (
+                      <View style={[styles.smallAvatar, styles.smallAvatarPlaceholder]}>
+                        <MaterialIcons name="local-shipping" size={14} color={PRIMARY} />
+                      </View>
+                    )}
+                    <Text style={styles.deliveryChipText} numberOfLines={1}>
+                      {order.deliveryName}
+                    </Text>
+                  </View>
+                </View>
+                <View style={[styles.paymentStatusRow, order.paymentStatus === "Paid" ? styles.paymentStatusPaid : styles.paymentStatusNotPaid]}>
+                  <MaterialIcons
+                    name={order.paymentStatus === "Paid" ? "check-circle" : "schedule"}
+                    size={14}
+                    color={order.paymentStatus === "Paid" ? "#15803d" : "#b45309"}
+                  />
+                  <Text
+                    style={[
+                      styles.paymentStatusText,
+                      order.paymentStatus === "Paid" ? styles.paymentStatusTextPaid : styles.paymentStatusTextNotPaid,
+                    ]}
+                  >
+                    {order.paymentStatus === "Paid" ? "Paid" : "Not paid yet"}
+                  </Text>
                 </View>
                 <View style={styles.cardActionsRow}>
                   <Pressable
@@ -243,16 +297,23 @@ function BottomOrdersSheet({
                     <Text style={styles.viewDetailsBtnText}>View order</Text>
                     <MaterialIcons name="chevron-right" size={18} color={PRIMARY} />
                   </Pressable>
-                  <Pressable
-                    style={styles.confirmOrderCardBtn}
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      onConfirmOrder?.(order.id, order.estimationId);
-                    }}
-                  >
-                    <MaterialIcons name="check-circle" size={16} color="#fff" />
-                    <Text style={styles.confirmOrderCardBtnText}>Confirm order</Text>
-                  </Pressable>
+                  {order.orderStatus === "delivered" ? (
+                    <View style={styles.doneBadge}>
+                      <MaterialIcons name="check-circle" size={16} color="#15803d" />
+                      <Text style={styles.doneBadgeText}>Done</Text>
+                    </View>
+                  ) : (
+                    <Pressable
+                      style={styles.doneActionBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        onConfirmOrder?.(order.id, order.estimationId);
+                      }}
+                    >
+                      <MaterialIcons name="check-circle" size={16} color="#15803d" />
+                      <Text style={styles.doneActionBtnText}>Done</Text>
+                    </Pressable>
+                  )}
                 </View>
               </Pressable>
             ))
@@ -286,6 +347,7 @@ export default function WorkspaceScreen() {
   const [estimatedList, setEstimatedList] = useState<AvailableEstimationForDelivery[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { name: string; photo: string | null; city: string | null; latitude: number | null; longitude: number | null; rating: string }>>({});
   const [productTitles, setProductTitles] = useState<Record<string, string>>({});
+  const [productImages, setProductImages] = useState<Record<string, string>>({});
   const [availableLoading, setAvailableLoading] = useState(true);
   const [acceptedLoading, setAcceptedLoading] = useState(true);
   const [estimatedLoading, setEstimatedLoading] = useState(true);
@@ -346,9 +408,12 @@ export default function WorkspaceScreen() {
           Array.from(productIds).map(async (productId) => {
             try {
               const p = await fetchProductByIdApi(productId);
-              return [productId, p?.title ?? productId.slice(-6)] as const;
+              const title = p?.title ?? productId.slice(-6);
+              const img = p?.images?.[0];
+              const imageUrl = img ? (buildPhotoUrl(img) ?? undefined) : undefined;
+              return [productId, { title, imageUrl }] as const;
             } catch {
-              return [productId, productId.slice(-6)] as const;
+              return [productId, { title: productId.slice(-6), imageUrl: undefined }] as const;
             }
           })
         ),
@@ -361,10 +426,13 @@ export default function WorkspaceScreen() {
       setProfiles((p) => ({ ...p, ...nextProfiles }));
 
       const nextTitles: Record<string, string> = {};
-      productRes.forEach(([id, title]) => {
+      const nextImages: Record<string, string> = {};
+      productRes.forEach(([id, { title, imageUrl }]) => {
         nextTitles[id] = title;
+        if (imageUrl) nextImages[id] = imageUrl;
       });
       setProductTitles((t) => ({ ...t, ...nextTitles }));
+      setProductImages((i) => ({ ...i, ...nextImages }));
     } catch {
       setAvailableList([]);
     } finally {
@@ -401,9 +469,12 @@ export default function WorkspaceScreen() {
         Array.from(productIds).map(async (productId) => {
           try {
             const p = await fetchProductByIdApi(productId);
-            return [productId, p?.title ?? productId.slice(-6)] as const;
+            const title = p?.title ?? productId.slice(-6);
+            const img = p?.images?.[0];
+            const imageUrl = img ? (buildPhotoUrl(img) ?? undefined) : undefined;
+            return [productId, { title, imageUrl }] as const;
           } catch {
-            return [productId, productId.slice(-6)] as const;
+            return [productId, { title: productId.slice(-6), imageUrl: undefined }] as const;
           }
         })
       );
@@ -411,8 +482,13 @@ export default function WorkspaceScreen() {
       profilesRes.forEach(([id, pr]) => { nextProfiles[id] = pr; });
       setProfiles((p) => ({ ...p, ...nextProfiles }));
       const nextTitles: Record<string, string> = {};
-      productRes.forEach(([id, title]) => { nextTitles[id] = title; });
+      const nextImages: Record<string, string> = {};
+      productRes.forEach(([id, { title, imageUrl }]) => {
+        nextTitles[id] = title;
+        if (imageUrl) nextImages[id] = imageUrl;
+      });
       setProductTitles((t) => ({ ...t, ...nextTitles }));
+      setProductImages((i) => ({ ...i, ...nextImages }));
     } catch {
       setAcceptedList([]);
     } finally {
@@ -449,9 +525,12 @@ export default function WorkspaceScreen() {
         Array.from(productIds).map(async (productId) => {
           try {
             const p = await fetchProductByIdApi(productId);
-            return [productId, p?.title ?? productId.slice(-6)] as const;
+            const title = p?.title ?? productId.slice(-6);
+            const img = p?.images?.[0];
+            const imageUrl = img ? (buildPhotoUrl(img) ?? undefined) : undefined;
+            return [productId, { title, imageUrl }] as const;
           } catch {
-            return [productId, productId.slice(-6)] as const;
+            return [productId, { title: productId.slice(-6), imageUrl: undefined }] as const;
           }
         })
       );
@@ -459,8 +538,13 @@ export default function WorkspaceScreen() {
       profilesRes.forEach(([id, pr]) => { nextProfiles[id] = pr; });
       setProfiles((p) => ({ ...p, ...nextProfiles }));
       const nextTitles: Record<string, string> = {};
-      productRes.forEach(([id, title]) => { nextTitles[id] = title; });
+      const nextImages: Record<string, string> = {};
+      productRes.forEach(([id, { title, imageUrl }]) => {
+        nextTitles[id] = title;
+        if (imageUrl) nextImages[id] = imageUrl;
+      });
       setProductTitles((t) => ({ ...t, ...nextTitles }));
+      setProductImages((i) => ({ ...i, ...nextImages }));
     } catch {
       setEstimatedList([]);
     } finally {
@@ -531,9 +615,7 @@ export default function WorkspaceScreen() {
       if (estimationId) {
         try {
           await confirmEstimationApi(estimationId);
-          loadAvailable();
-          loadAccepted();
-          loadEstimated();
+          await Promise.all([loadAvailable(), loadAccepted(), loadEstimated()]);
         } catch {
           // show error optionally
         }
@@ -564,6 +646,11 @@ export default function WorkspaceScreen() {
         order.items
           .map((i) => `${i.quantity}x ${productTitles[i.productId] ?? i.productId?.slice(-6) ?? "Item"}`)
           .join(", ") || "—";
+      const itemImageUrls = order.items.map(
+        (i) => productImages[i.productId] ?? FALLBACK_ITEM_IMAGE
+      );
+      const paymentStatus: "Paid" | "Not paid yet" =
+        estimation.paidAt ? "Paid" : "Not paid yet";
       return {
         id: order.id,
         estimationId: options.estimationId ?? estimation.id,
@@ -572,13 +659,19 @@ export default function WorkspaceScreen() {
         rating: client?.rating ?? "—",
         tag: client?.city ?? "",
         patissiereName: patissiere?.name ?? "Patissiere",
+        patissierePhoto: patissiere?.photo ?? null,
+        deliveryName: user?.name ?? "Delivery",
+        deliveryPhoto: user?.photo ?? null,
         price: "€" + estimation.price.toFixed(2),
         distance: dist,
         items: itemsStr,
+        itemImageUrls,
         highlighted: false,
+        paymentStatus,
+        orderStatus: order.status,
       };
     },
-    [profiles, userLocation, productTitles]
+    [profiles, userLocation, productTitles, productImages, user]
   );
 
   const availableOrders: WorkspaceOrderItem[] = useMemo(
@@ -1014,6 +1107,56 @@ const styles = StyleSheet.create({
   orderRight: { alignItems: "flex-end" },
   orderPrice: { fontSize: 12, fontWeight: "700", color: PRIMARY },
   orderDistance: { fontSize: 10, color: SLATE_500, marginTop: 2 },
+  itemThumbnailsRow: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 8,
+  },
+  itemThumb: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: BORDER_SUBTLE,
+  },
+  patissiereDeliveryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 8,
+    flexWrap: "wrap",
+  },
+  smallAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+  },
+  smallAvatarPlaceholder: {
+    backgroundColor: PRIMARY_05,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deliveryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginLeft: "auto",
+  },
+  deliveryChipText: { fontSize: 11, fontWeight: "700", color: SLATE_600, maxWidth: 80 },
+  paymentStatusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    alignSelf: "flex-start",
+  },
+  paymentStatusPaid: { backgroundColor: "#dcfce7" },
+  paymentStatusNotPaid: { backgroundColor: "#fffbeb" },
+  paymentStatusText: { fontSize: 11, fontWeight: "700" },
+  paymentStatusTextPaid: { color: "#15803d" },
+  paymentStatusTextNotPaid: { color: "#b45309" },
   cardActionsRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1045,6 +1188,31 @@ const styles = StyleSheet.create({
     backgroundColor: "#16a34a",
   },
   confirmOrderCardBtnText: { fontSize: 12, fontWeight: "700", color: "#fff" },
+  doneActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: "#dcfce7",
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+  },
+  doneActionBtnText: { fontSize: 12, fontWeight: "700", color: "#15803d" },
+  doneBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: "#dcfce7",
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+  },
+  doneBadgeText: { fontSize: 12, fontWeight: "700", color: "#15803d" },
   backBtn: {
     position: "absolute",
     left: 8,

@@ -38,6 +38,10 @@ export class Estimation {
   @Prop({ type: String, default: null })
   acceptedBy: string | null;
 
+  /** When the client paid the delivery fee for this estimation. */
+  @Prop({ type: Date, default: null })
+  paidAt: Date | null;
+
   @Prop({ type: Date, default: Date.now })
   createdAt: Date;
 }

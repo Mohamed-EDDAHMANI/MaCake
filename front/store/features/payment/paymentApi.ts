@@ -33,10 +33,22 @@ export interface CreateOrderPaymentPayload {
   paymentMethod: "wallet" | "stripe_card";
 }
 
+export interface CreateDeliveryPaymentPayload {
+  estimationId: string;
+  paymentMethod: "wallet" | "stripe_card";
+}
+
 export async function createOrderPaymentApi(
   payload: CreateOrderPaymentPayload,
 ): Promise<WalletTopUpResponse> {
   const res = await api.post("/s5/payment/create", payload);
+  return res.data?.data ?? {};
+}
+
+export async function createDeliveryPaymentApi(
+  payload: CreateDeliveryPaymentPayload,
+): Promise<WalletTopUpResponse> {
+  const res = await api.post("/s5/payment/delivery", payload);
   return res.data?.data ?? {};
 }
 

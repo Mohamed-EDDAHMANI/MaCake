@@ -50,6 +50,7 @@ export class EstimationService {
       status: doc.status,
       createdBy: doc.createdBy ?? null,
       acceptedBy: (doc as any).acceptedBy ?? null,
+      paidAt: (doc as any).paidAt ?? null,
       createdAt: doc.createdAt,
     };
   }
@@ -114,6 +115,12 @@ export class EstimationService {
       return { success: false, message: 'Estimation not found', statusCode: 404 };
     }
     if (doc.status === EstimationStatus.CONFIRMED) {
+      // Delivery can "confirm" from workspace to complete the mission (mark order delivered)
+      const isDeliveryOwnEstimation = doc.userRole === EstimationUserRole.DELIVERY && doc.createdBy === userId;
+      const isClientEstimationAcceptedByMe = doc.userRole === EstimationUserRole.CLIENT && (doc as any).acceptedBy === userId;
+      if (isDeliveryOwnEstimation || isClientEstimationAcceptedByMe) {
+        await this.orderService.markDeliveredByDelivery(String(doc.orderId));
+      }
       return { success: true, message: 'Already confirmed', data: this.mapEstimation(doc) };
     }
     if (doc.userRole === EstimationUserRole.CLIENT) {
@@ -131,6 +138,8 @@ export class EstimationService {
       }
       doc.status = EstimationStatus.CONFIRMED;
       await doc.save();
+      // Mark order as delivered when delivery confirms (order delivered successfully)
+      await this.orderService.markDeliveredByDelivery(String(doc.orderId));
       const data = this.mapEstimation(doc);
       this.emitEstimationCreated(String(doc.orderId));
       return { success: true, message: 'Estimation confirmed', data };
@@ -139,13 +148,31 @@ export class EstimationService {
   }
 
   /**
+   * Mark estimation as paid (client paid the delivery fee).
+   */
+  async markEstimationPaid(estimationId: string) {
+    const doc = await this.estimationModel.findById(estimationId).exec();
+    if (!doc) {
+      return { success: false, message: 'Estimation not found', statusCode: 404 };
+    }
+    if ((doc as any).paidAt) {
+      return { success: true, message: 'Already paid', data: this.mapEstimation(doc) };
+    }
+    (doc as any).paidAt = new Date();
+    await doc.save();
+    const data = this.mapEstimation(doc);
+    this.emitEstimationCreated(String(doc.orderId));
+    return { success: true, message: 'Delivery payment recorded', data };
+  }
+
+  /**
    * Build list of estimations with order + items from a list of docs.
    */
   private async buildDeliveryEstimationListFromDocs(
-    list: Array<{ _id: any; orderId: any; details: string; price: number; userRole: string; status: string; createdBy?: string | null; acceptedBy?: string | null; createdAt: Date }>,
+    list: Array<{ _id: any; orderId: any; details: string; price: number; userRole: string; status: string; createdBy?: string | null; acceptedBy?: string | null; paidAt?: Date | null; createdAt: Date }>,
   ) {
     const data: Array<{
-      estimation: { id: string; orderId: string; details: string; price: number; userRole: string; status: string; createdBy?: string | null; acceptedBy?: string | null; createdAt: Date };
+      estimation: { id: string; orderId: string; details: string; price: number; userRole: string; status: string; createdBy?: string | null; acceptedBy?: string | null; paidAt?: Date | null; createdAt: Date };
       order: any;
     }> = [];
 
@@ -163,6 +190,7 @@ export class EstimationService {
           status: doc.status,
           createdBy: doc.createdBy ?? null,
           acceptedBy: doc.acceptedBy ?? null,
+          paidAt: doc.paidAt ?? null,
           createdAt: doc.createdAt,
         },
         order,
@@ -216,6 +244,31 @@ export class EstimationService {
   }
 
   /**
+   * Get one estimation by id (e.g. for payment-service to get delivery userId and amount).
+   */
+  async findEstimationById(estimationId: string) {
+    if (!estimationId || !Types.ObjectId.isValid(estimationId)) {
+      return { success: false, message: 'Invalid estimation id', statusCode: 400, data: null };
+    }
+    const doc = await this.estimationModel.findById(estimationId).lean().exec();
+    if (!doc) {
+      return { success: false, message: 'Estimation not found', statusCode: 404, data: null };
+    }
+    const d = doc as any;
+    return {
+      success: true,
+      data: {
+        id: String(d._id),
+        orderId: String(d.orderId),
+        price: d.price,
+        acceptedBy: d.acceptedBy ?? null,
+        createdBy: d.createdBy ?? null,
+        status: d.status,
+      },
+    };
+  }
+
+  /**
    * Get all estimations for an order (client + delivery). Not stored in Redux on front.
    */
   async findByOrderId(orderId: string) {
@@ -235,6 +288,7 @@ export class EstimationService {
         status: doc.status,
         createdBy: doc.createdBy ?? null,
         acceptedBy: doc.acceptedBy ?? null,
+        paidAt: doc.paidAt ?? null,
         createdAt: doc.createdAt,
       })),
     };
@@ -255,7 +309,7 @@ export class EstimationService {
       .exec();
 
     const data: Array<{
-      estimation: { id: string; orderId: string; details: string; price: number; userRole: string; status: string; createdAt: Date };
+      estimation: { id: string; orderId: string; details: string; price: number; userRole: string; status: string; paidAt?: Date | null; createdAt: Date };
       order: any;
     }> = [];
 
@@ -271,6 +325,7 @@ export class EstimationService {
           price: doc.price,
           userRole: doc.userRole,
           status: doc.status,
+          paidAt: doc.paidAt ?? null,
           createdAt: doc.createdAt,
         },
         order,

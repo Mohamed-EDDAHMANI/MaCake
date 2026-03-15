@@ -88,5 +88,13 @@ export const ORDERS_ENDPOINTS = [
     pattern: /^\/estimation\/find-estimated-delivery$/,
     roles: ['delivery', 'livreur', 'admin'],
   },
+  {
+    pattern: /^\/estimation\/mark-paid\/.*$/,
+    roles: ['client', 'admin'],
+  },
+  {
+    pattern: /^\/estimation\/find-one\/.*$/,
+    roles: ['client', 'delivery', 'livreur', 'admin'],
+  },
 ];
 

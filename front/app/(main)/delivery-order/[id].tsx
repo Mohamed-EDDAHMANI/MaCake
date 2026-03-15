@@ -53,6 +53,12 @@ const STATUS_LABELS: Record<string, string> = {
   refused: "Refused",
 };
 
+const STATUS_BADGE_STYLE: Record<string, { bg: string; text: string }> = {
+  delivering: { bg: "#e0e7ff", text: "#4338ca" },
+  delivered: { bg: "#dcfce7", text: "#15803d" },
+};
+const DEFAULT_BADGE = { bg: "#e0e7ff", text: "#4338ca" };
+
 export default function DeliveryOrderDetailsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
@@ -69,6 +75,7 @@ export default function DeliveryOrderDetailsScreen() {
   const [myDeliveryEstimationId, setMyDeliveryEstimationId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const userId = useAppSelector((state) => state.auth.user?.id ?? "");
+  const currentUser = useAppSelector((state) => state.auth.user);
 
   const loadOrder = useCallback(async () => {
     if (!id) {
@@ -182,6 +189,8 @@ export default function DeliveryOrderDetailsScreen() {
 
   const orderCode = `MC-${order.id.slice(-4).toUpperCase()}`;
   const statusLabel = STATUS_LABELS[order.status] ?? order.status;
+  const statusBadgeStyle = STATUS_BADGE_STYLE[order.status] ?? DEFAULT_BADGE;
+  const isDelivered = order.status === "delivered";
   const subtotal = order.items.reduce((s, i) => s + i.price * i.quantity, 0);
   const potentialEarnings = order.totalPrice > 0 ? order.totalPrice : subtotal;
 
@@ -198,8 +207,8 @@ export default function DeliveryOrderDetailsScreen() {
               <Text style={styles.headerCode}>#{orderCode}</Text>
             </View>
           </View>
-          <View style={[styles.statusBadge, { backgroundColor: "#e0e7ff" }]}>
-            <Text style={[styles.statusBadgeText, { color: "#4338ca" }]}>{statusLabel}</Text>
+          <View style={[styles.statusBadge, { backgroundColor: statusBadgeStyle.bg }]}>
+            <Text style={[styles.statusBadgeText, { color: statusBadgeStyle.text }]}>{statusLabel}</Text>
           </View>
         </View>
 
@@ -278,6 +287,25 @@ export default function DeliveryOrderDetailsScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Delivery (you)</Text>
+          <View style={styles.clientCard}>
+            {currentUser?.photo ? (
+              <Image
+                source={{ uri: buildPhotoUrl(currentUser.photo)! }}
+                style={styles.clientAvatar}
+              />
+            ) : (
+              <View style={[styles.clientAvatar, styles.avatarPlaceholder]}>
+                <MaterialIcons name="local-shipping" size={28} color={PRIMARY} />
+              </View>
+            )}
+            <View style={styles.clientInfo}>
+              <Text style={styles.clientName}>{currentUser?.name ?? "Delivery"}</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
           <View style={styles.sectionRow}>
             <Text style={styles.sectionTitle}>Order summary</Text>
             <Text style={styles.itemsCount}>{order.items.length} items</Text>
@@ -309,30 +337,39 @@ export default function DeliveryOrderDetailsScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Pressable
-            style={styles.primaryAction}
-            onPress={() => setShowEstimationModal(true)}
-          >
-            <MaterialIcons name="schedule" size={18} color="#fff" />
-            <Text style={styles.primaryActionText}>Add estimation</Text>
-          </Pressable>
-          <Pressable
-            style={[styles.primaryAction, styles.confirmOrderBtn, (!myDeliveryEstimationId || confirming) && styles.confirmOrderBtnDisabled]}
-            onPress={async () => {
-              if (!myDeliveryEstimationId || confirming) return;
-              setConfirming(true);
-              try {
-                await confirmEstimationApi(myDeliveryEstimationId);
-                loadOrder();
-              } finally {
-                setConfirming(false);
-              }
-            }}
-            disabled={!myDeliveryEstimationId || confirming}
-          >
-            <MaterialIcons name="check-circle" size={18} color="#fff" />
-            <Text style={styles.primaryActionText}>{confirming ? "Confirming…" : "Confirm order"}</Text>
-          </Pressable>
+          {isDelivered ? (
+            <View style={styles.doneState}>
+              <MaterialIcons name="check-circle" size={24} color="#15803d" />
+              <Text style={styles.doneStateText}>Order delivered successfully</Text>
+            </View>
+          ) : (
+            <>
+              <Pressable
+                style={styles.primaryAction}
+                onPress={() => setShowEstimationModal(true)}
+              >
+                <MaterialIcons name="schedule" size={18} color="#fff" />
+                <Text style={styles.primaryActionText}>Add estimation</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.primaryAction, styles.confirmOrderBtn, (!myDeliveryEstimationId || confirming) && styles.confirmOrderBtnDisabled]}
+                onPress={async () => {
+                  if (!myDeliveryEstimationId || confirming) return;
+                  setConfirming(true);
+                  try {
+                    await confirmEstimationApi(myDeliveryEstimationId);
+                    loadOrder();
+                  } finally {
+                    setConfirming(false);
+                  }
+                }}
+                disabled={!myDeliveryEstimationId || confirming}
+              >
+                <MaterialIcons name="check-circle" size={18} color="#fff" />
+                <Text style={styles.primaryActionText}>{confirming ? "Confirming…" : "Confirm delivery"}</Text>
+              </Pressable>
+            </>
+          )}
           <Pressable style={styles.secondaryAction}>
             <MaterialIcons name="chat-bubble-outline" size={18} color={SLATE_600} />
             <Text style={styles.secondaryActionText}>Contact client</Text>
@@ -552,4 +589,17 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   secondaryActionText: { color: SLATE_600, fontSize: 14, fontWeight: "800" },
+  doneState: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    backgroundColor: "#dcfce7",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#bbf7d0",
+  },
+  doneStateText: { fontSize: 15, fontWeight: "800", color: "#15803d" },
 });

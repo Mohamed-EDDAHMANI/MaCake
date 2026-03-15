@@ -476,6 +476,45 @@ export class OrderService {
   }
 
   /**
+   * Delivery confirms order delivered → mark as delivered.
+   */
+  async markDeliveredByDelivery(orderId: string) {
+    if (!orderId || !Types.ObjectId.isValid(orderId)) {
+      throw new BadRequestException('Invalid order id');
+    }
+
+    const order = await this.orderModel.findById(new Types.ObjectId(orderId)).exec();
+    if (!order) {
+      return { success: false, message: 'Order not found', data: null };
+    }
+
+    if (order.status !== OrderStatus.DELIVERING) {
+      return {
+        success: true,
+        message: 'Order is not out for delivery',
+        data: await this.mapOrderDocument(order as any),
+      };
+    }
+
+    order.status = OrderStatus.DELIVERED;
+    await order.save();
+
+    await this.orderStatusHistoryModel.create({
+      orderId: order._id,
+      status: OrderStatus.DELIVERED,
+      changedAt: new Date(),
+    });
+
+    this.emitOrderStatusChanged(String(order._id), OrderStatus.DELIVERED);
+
+    return {
+      success: true,
+      message: 'Order marked as delivered successfully',
+      data: await this.mapOrderDocument(order as any),
+    };
+  }
+
+  /**
    * Client requests delivery → move to delivering (livreur to be assigned).
    */
   async startDelivery(orderId: string, clientId: string) {

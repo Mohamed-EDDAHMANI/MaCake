@@ -20,6 +20,7 @@ import { updateUser } from "@/store/features/auth/authSlice";
 import {
   confirmOrderStripePaymentApi,
   createOrderPaymentApi,
+  createDeliveryPaymentApi,
 } from "@/store/features/payment/paymentApi";
 import { getStripeModuleSafe } from "@/lib/stripe-safe";
 import OrderSuccessPopup from "@/components/product-detail/OrderSuccessPopup";
@@ -34,13 +35,20 @@ function formatMoney(value: number): string {
 export default function PaymentScreen() {
   const router = useRouter();
   const dispatch = useAppDispatch();
-  const params = useLocalSearchParams<{ orderId?: string; total?: string }>();
+  const params = useLocalSearchParams<{ orderId?: string; total?: string; estimationId?: string }>();
   const user = useAppSelector((state) => state.auth.user);
 
   const orderId =
     typeof params.orderId === "string" && params.orderId.trim().length > 0
       ? params.orderId
       : "UNKNOWN";
+
+  const estimationId =
+    typeof params.estimationId === "string" && params.estimationId.trim().length > 0
+      ? params.estimationId
+      : null;
+
+  const isDeliveryPayment = Boolean(estimationId);
 
   const totalPrice = useMemo(() => {
     const n = Number(params.total);
@@ -52,7 +60,7 @@ export default function PaymentScreen() {
   const walletCanCover = walletShortfall <= 0;
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(
-    walletCanCover ? "wallet" : "stripe"
+    isDeliveryPayment || walletCanCover ? "wallet" : "stripe"
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,17 +76,21 @@ export default function PaymentScreen() {
     try {
       setError(null);
       setIsProcessing(true);
-      const paid = await createOrderPaymentApi({
-        orderId,
-        paymentMethod: "wallet",
-      });
+      const paid = isDeliveryPayment && estimationId
+        ? await createDeliveryPaymentApi({
+            estimationId,
+            paymentMethod: "wallet",
+          })
+        : await createOrderPaymentApi({
+            orderId,
+            paymentMethod: "wallet",
+          });
       const nextBalance = Number(
         paid.walletBalance ?? Math.max(0, walletBalance - totalPrice)
       );
       dispatch(updateUser({ walletBalance: Number(nextBalance.toFixed(2)) }));
 
       setShowSuccess(true);
-      // Navigate back to order details after showing success briefly
       setTimeout(() => {
         setShowSuccess(false);
         router.back();
@@ -96,6 +108,10 @@ export default function PaymentScreen() {
 
   const handleStripeDirectPay = async () => {
     if (isProcessing) return;
+    if (isDeliveryPayment) {
+      setError("Delivery payment by card not supported yet. Use wallet.");
+      return;
+    }
     try {
       setError(null);
       setIsProcessing(true);
@@ -182,7 +198,7 @@ export default function PaymentScreen() {
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>Order Summary</Text>
+            <Text style={styles.summaryLabel}>{isDeliveryPayment ? "Delivery fee" : "Order Summary"}</Text>
             <Text style={styles.orderIdText}>#{orderId.slice(-6).toUpperCase()}</Text>
             <View style={styles.totalRow}>
               <Text style={styles.totalAmount}>{formatMoney(totalPrice)}</Text>
@@ -233,30 +249,32 @@ export default function PaymentScreen() {
             ) : null}
           </View>
 
-          <View>
-            <Text style={styles.sectionTitle}>Debit / Credit Card</Text>
-            <Pressable
-              style={[
-                styles.paymentCard,
-                selectedMethod === "stripe" ? styles.paymentCardSelected : styles.paymentCardUnselected,
-              ]}
-              onPress={() => {
-                setSelectedMethod("stripe");
-                setError(null);
-              }}
-            >
-              <View style={styles.paymentIcon}>
-                <MaterialIcons name="credit-card" size={22} color={PRIMARY} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.paymentTitle}>Pay with Stripe</Text>
-                <Text style={styles.paymentSub}>Secure card payment</Text>
-              </View>
-              <View style={styles.radioOuter}>
-                {selectedMethod === "stripe" ? <View style={styles.radioInner} /> : null}
-              </View>
-            </Pressable>
-          </View>
+          {!isDeliveryPayment ? (
+            <View>
+              <Text style={styles.sectionTitle}>Debit / Credit Card</Text>
+              <Pressable
+                style={[
+                  styles.paymentCard,
+                  selectedMethod === "stripe" ? styles.paymentCardSelected : styles.paymentCardUnselected,
+                ]}
+                onPress={() => {
+                  setSelectedMethod("stripe");
+                  setError(null);
+                }}
+              >
+                <View style={styles.paymentIcon}>
+                  <MaterialIcons name="credit-card" size={22} color={PRIMARY} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.paymentTitle}>Pay with Stripe</Text>
+                  <Text style={styles.paymentSub}>Secure card payment</Text>
+                </View>
+                <View style={styles.radioOuter}>
+                  {selectedMethod === "stripe" ? <View style={styles.radioInner} /> : null}
+                </View>
+              </Pressable>
+            </View>
+          ) : null}
 
           <View style={styles.secureBadge}>
             <MaterialIcons name="verified-user" size={16} color="#047857" />
