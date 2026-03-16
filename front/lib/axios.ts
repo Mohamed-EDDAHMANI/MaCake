@@ -9,8 +9,8 @@ import { store } from "@/store/store";
 import {
   logout,
   setCredentials,
-  type AuthApiResponse,
-} from "@/store/features/auth";
+} from "@/store/features/auth/authSlice";
+import type { AuthApiResponse } from "@/store/features/auth/authSlice";
 
 // ---------- Base URL resolution (Android / iOS / Web) ----------
 const DEFAULT_PORT = process.env.PORT || 3000;
@@ -31,7 +31,7 @@ function resolveBaseUrl(): string {
   if (envUrl) return envUrl;
 
   // 3) Platform-specific defaults (emulator / web)
-  const LAN_IP = "192.168.1.7"; // IP dyal PC dyalek
+  const LAN_IP = "172.16.8.159"; // IP dyal PC dyalek
 
   if (Platform.OS === "android") {
     return `http://${LAN_IP}:${DEFAULT_PORT}`;

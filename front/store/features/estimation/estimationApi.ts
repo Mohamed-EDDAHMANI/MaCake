@@ -108,8 +108,24 @@ export async function getEstimatedEstimationsForDeliveryApi(): Promise<
   return res.data?.data ?? [];
 }
 
+/** Get delivery's delivered (done) orders for Historic tab. */
+export async function getDeliveredEstimationsForDeliveryApi(): Promise<
+  AvailableEstimationForDelivery[]
+> {
+  const res = await api.get("/s3/estimation/find-delivered-delivery");
+  return res.data?.data ?? [];
+}
+
 /** Mark estimation as paid (client paid the delivery fee). Call after delivery payment success. */
 export async function markEstimationPaidApi(estimationId: string): Promise<{ success: boolean; data?: EstimationItem }> {
   const res = await api.post(`/s3/estimation/mark-paid/${estimationId}`);
+  return res.data ?? {};
+}
+
+/** Client accepts a delivery's offer (sets client estimation acceptedBy to that delivery, status confirmed). */
+export async function acceptDeliveryOfferApi(
+  deliveryEstimationId: string
+): Promise<{ success: boolean; data?: EstimationItem }> {
+  const res = await api.post(`/s3/estimation/accept-delivery-offer/${deliveryEstimationId}`);
   return res.data ?? {};
 }

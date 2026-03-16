@@ -21,6 +21,7 @@ import { useAppSelector } from "@/store/hooks";
 import {
   BACKGROUND_LIGHT,
   TEXT_PRIMARY,
+  SLATE_200,
   SLATE_400,
   SLATE_500,
   SLATE_600,
@@ -45,16 +46,18 @@ import {
   getAvailableEstimationsForDeliveryApi,
   getAcceptedEstimationsForDeliveryApi,
   getEstimatedEstimationsForDeliveryApi,
+  getDeliveredEstimationsForDeliveryApi,
   confirmEstimationApi,
   type AvailableEstimationForDelivery,
 } from "@/store/features/estimation";
 import { getProfileById } from "@/store/features/auth/authApi";
 import { getOrderSocket } from "@/lib/order-socket";
 import { fetchProductByIdApi } from "@/store/features/catalog/catalogApi";
+import { EstimationCreateModal } from "@/components/order/EstimationCreateModal";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-type TabKey = "Available" | "Accepted" | "Estimated";
+type TabKey = "Available" | "Accepted" | "Estimated" | "Historic";
 
 /** Rough distance in km (haversine approximation) */
 function distanceKm(
@@ -80,6 +83,7 @@ const TAB_ICONS: Record<TabKey, keyof typeof MaterialIcons.glyphMap> = {
   Available: "inbox",
   Accepted: "check-circle",
   Estimated: "schedule",
+  Historic: "history",
 };
 
 const COLLAPSED_HEIGHT = 100;
@@ -94,6 +98,8 @@ export type WorkspaceOrderItem = {
   clientName: string;
   clientPhoto: string | null;
   rating: string;
+  /** Location label (e.g. city) for display instead of distance */
+  locationLabel: string;
   tag: string;
   patissiereName: string;
   patissierePhoto: string | null;
@@ -119,7 +125,10 @@ function BottomOrdersSheet({
   onCardPressForMap,
   onViewOrder,
   onConfirmOrder,
+  onOpenEstimationModal,
   loading,
+  floatingAddButtonVisible,
+  onFloatingAddPress,
 }: {
   headerTop: number;
   activeTab: TabKey;
@@ -129,7 +138,10 @@ function BottomOrdersSheet({
   onCardPressForMap?: (orderId: string) => void;
   onViewOrder?: (orderId: string) => void;
   onConfirmOrder?: (orderId: string, estimationId?: string) => void;
+  onOpenEstimationModal?: (orderId: string) => void;
   loading?: boolean;
+  floatingAddButtonVisible?: boolean;
+  onFloatingAddPress?: () => void;
 }) {
   const searchBarBottom = headerTop + 56 + 48 + 16;
   const halfHeight = SCREEN_HEIGHT * 0.45;
@@ -176,9 +188,23 @@ function BottomOrdersSheet({
   return (
     <GestureDetector gesture={panGesture}>
       <Animated.View style={[styles.bottomSheet, animatedSheet]}>
+        {floatingAddButtonVisible && onFloatingAddPress ? (
+          <Pressable
+            style={styles.floatingAddBtn}
+            onPress={onFloatingAddPress}
+          >
+            <MaterialIcons name="add" size={28} color="#fff" />
+          </Pressable>
+        ) : null}
+        <View style={styles.bottomSheetInner}>
         <View style={styles.dragHandle} />
-        <View style={styles.tabsRow}>
-          {(["Available", "Accepted", "Estimated"] as TabKey[]).map((tab) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabsRow}
+          style={styles.tabsScroll}
+        >
+          {(["Available", "Accepted", "Estimated", "Historic"] as TabKey[]).map((tab) => (
             <Pressable
               key={tab}
               style={[styles.tab, activeTab === tab && styles.tabActive]}
@@ -186,36 +212,39 @@ function BottomOrdersSheet({
             >
               <MaterialIcons
                 name={TAB_ICONS[tab]}
-                size={18}
+                size={16}
                 color={activeTab === tab ? PRIMARY : SLATE_400}
               />
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]} numberOfLines={1}>
                 {tab}
               </Text>
             </Pressable>
           ))}
-        </View>
-        <ScrollView
-          style={styles.ordersScroll}
-          contentContainerStyle={styles.ordersScrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        </ScrollView>
+        <View style={styles.ordersScrollWrap}>
+          <ScrollView
+            style={styles.ordersScroll}
+            contentContainerStyle={styles.ordersScrollContent}
+            showsVerticalScrollIndicator={false}
+          >
           {loading ? (
             <View style={styles.ordersLoading}>
               <ActivityIndicator size="small" color={PRIMARY} />
               <Text style={styles.ordersLoadingText}>Loading available requests...</Text>
             </View>
           ) : (
-            orders.map((order) => (
+            orders.map((order) => {
+              const isSelected = order.highlighted || selectedOrderIdForMap === order.id;
+              return (
               <Pressable
                 key={order.id}
                 style={[
                   styles.orderCard,
-                  order.highlighted && styles.orderCardHighlight,
-                  selectedOrderIdForMap === order.id && styles.orderCardHighlight,
+                  isSelected && styles.orderCardHighlight,
                 ]}
                 onPress={() => onCardPressForMap?.(order.id)}
               >
+                {/* Row: customer avatar + name/rating + price */}
                 <View style={styles.orderRow}>
                   <View style={styles.orderLeft}>
                     {order.clientPhoto ? (
@@ -225,68 +254,84 @@ function BottomOrdersSheet({
                         <MaterialIcons name="person" size={20} color={PRIMARY} />
                       </View>
                     )}
-                    <View>
+                    <View style={styles.orderNameBlock}>
                       <Text style={styles.orderName}>{order.clientName}</Text>
                       <View style={styles.orderMeta}>
-                        <MaterialIcons name="star" size={12} color={PRIMARY} />
-                        <Text style={styles.orderMetaText}>
-                          {order.rating} • {order.tag}
-                        </Text>
+                        <MaterialIcons name="star" size={12} color="#f59e0b" />
+                        <Text style={styles.orderMetaText}>{order.rating}</Text>
+                        <Text style={styles.orderMetaDot}>•</Text>
+                        <Text style={styles.orderMetaText}>{order.locationLabel}</Text>
                       </View>
                     </View>
                   </View>
                   <View style={styles.orderRight}>
-                    <Text style={styles.orderPrice}>{order.price}</Text>
-                    <Text style={styles.orderDistance}>{order.distance}</Text>
+                    <Text style={styles.orderPrice} numberOfLines={1}>{order.price}</Text>
                   </View>
                 </View>
+                {/* Product thumbnails */}
                 {order.itemImageUrls.length > 0 ? (
                   <View style={styles.itemThumbnailsRow}>
-                    {order.itemImageUrls.slice(0, 4).map((uri, idx) => (
+                    {(order.itemImageUrls.length > 3
+                      ? order.itemImageUrls.slice(0, 3)
+                      : order.itemImageUrls
+                    ).map((uri, idx) => (
                       <Image key={`${order.id}-img-${idx}`} source={{ uri }} style={styles.itemThumb} />
                     ))}
+                    {order.itemImageUrls.length > 3 ? (
+                      <View style={styles.itemThumbMore}>
+                        <Text style={styles.itemThumbMoreText}>+{order.itemImageUrls.length - 3}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 ) : null}
-                <View style={styles.patissiereDeliveryRow}>
-                  {order.patissierePhoto ? (
-                    <Image source={{ uri: buildPhotoUrl(order.patissierePhoto)! }} style={styles.smallAvatar} />
-                  ) : (
-                    <View style={[styles.smallAvatar, styles.smallAvatarPlaceholder]}>
-                      <MaterialIcons name="store" size={14} color={PRIMARY} />
-                    </View>
-                  )}
-                  <Text style={styles.patissiereFrom} numberOfLines={1}>
-                    From: {order.patissiereName}
-                  </Text>
-                  <View style={styles.deliveryChip}>
-                    {order.deliveryPhoto ? (
-                      <Image source={{ uri: buildPhotoUrl(order.deliveryPhoto)! }} style={styles.smallAvatar} />
+                {/* Patissiere + payment status */}
+                <View style={styles.patissierePaymentRow}>
+                  <View style={styles.patissierePill}>
+                    {order.patissierePhoto ? (
+                      <Image source={{ uri: buildPhotoUrl(order.patissierePhoto)! }} style={styles.patissierePillAvatar} />
                     ) : (
-                      <View style={[styles.smallAvatar, styles.smallAvatarPlaceholder]}>
-                        <MaterialIcons name="local-shipping" size={14} color={PRIMARY} />
+                      <View style={[styles.patissierePillAvatar, styles.smallAvatarPlaceholder]}>
+                        <MaterialIcons name="store" size={12} color={PRIMARY} />
                       </View>
                     )}
-                    <Text style={styles.deliveryChipText} numberOfLines={1}>
-                      {order.deliveryName}
+                    <Text style={styles.patissierePillText} numberOfLines={1}>
+                      From: <Text style={styles.patissierePillName}>{order.patissiereName}</Text>
+                    </Text>
+                  </View>
+                  <View style={[styles.paymentStatusBadge, order.paymentStatus === "Paid" ? styles.paymentStatusPaid : styles.paymentStatusNotPaid]}>
+                    <MaterialIcons
+                      name={order.paymentStatus === "Paid" ? "check-circle" : "schedule"}
+                      size={14}
+                      color={order.paymentStatus === "Paid" ? "#059669" : "#ea580c"}
+                    />
+                    <Text
+                      style={[
+                        styles.paymentStatusText,
+                        order.paymentStatus === "Paid" ? styles.paymentStatusTextPaid : styles.paymentStatusTextNotPaid,
+                      ]}
+                    >
+                      {order.paymentStatus === "Paid" ? "Paid" : "Not paid yet"}
                     </Text>
                   </View>
                 </View>
-                <View style={[styles.paymentStatusRow, order.paymentStatus === "Paid" ? styles.paymentStatusPaid : styles.paymentStatusNotPaid]}>
-                  <MaterialIcons
-                    name={order.paymentStatus === "Paid" ? "check-circle" : "schedule"}
-                    size={14}
-                    color={order.paymentStatus === "Paid" ? "#15803d" : "#b45309"}
-                  />
-                  <Text
-                    style={[
-                      styles.paymentStatusText,
-                      order.paymentStatus === "Paid" ? styles.paymentStatusTextPaid : styles.paymentStatusTextNotPaid,
-                    ]}
-                  >
-                    {order.paymentStatus === "Paid" ? "Paid" : "Not paid yet"}
-                  </Text>
-                </View>
+                {/* Actions: primary button + chevron */}
                 <View style={styles.cardActionsRow}>
+                  {order.orderStatus === "delivered" ? (
+                    <View style={styles.doneBadge}>
+                      <MaterialIcons name="check-circle" size={16} color="#ffffff" />
+                      <Text style={styles.doneBadgeText}>Done</Text>
+                    </View>
+                  ) : (
+                    <Pressable
+                      style={styles.primaryActionBtn}
+                      onPress={(e) => {
+                        e.stopPropagation();
+                        onConfirmOrder?.(order.id, order.estimationId);
+                      }}
+                    >
+                      <Text style={styles.primaryActionBtnText}>Accept Order</Text>
+                    </Pressable>
+                  )}
                   <Pressable
                     style={styles.viewDetailsBtn}
                     onPress={(e) => {
@@ -294,31 +339,15 @@ function BottomOrdersSheet({
                       onViewOrder?.(order.id);
                     }}
                   >
-                    <Text style={styles.viewDetailsBtnText}>View order</Text>
-                    <MaterialIcons name="chevron-right" size={18} color={PRIMARY} />
+                    <MaterialIcons name="chevron-right" size={22} color={SLATE_400} />
                   </Pressable>
-                  {order.orderStatus === "delivered" ? (
-                    <View style={styles.doneBadge}>
-                      <MaterialIcons name="check-circle" size={16} color="#15803d" />
-                      <Text style={styles.doneBadgeText}>Done</Text>
-                    </View>
-                  ) : (
-                    <Pressable
-                      style={styles.doneActionBtn}
-                      onPress={(e) => {
-                        e.stopPropagation();
-                        onConfirmOrder?.(order.id, order.estimationId);
-                      }}
-                    >
-                      <MaterialIcons name="check-circle" size={16} color="#15803d" />
-                      <Text style={styles.doneActionBtnText}>Done</Text>
-                    </Pressable>
-                  )}
                 </View>
               </Pressable>
-            ))
+            ); })
           )}
-        </ScrollView>
+          </ScrollView>
+        </View>
+        </View>
       </Animated.View>
     </GestureDetector>
   );
@@ -345,13 +374,16 @@ export default function WorkspaceScreen() {
   const [availableList, setAvailableList] = useState<AvailableEstimationForDelivery[]>([]);
   const [acceptedList, setAcceptedList] = useState<AvailableEstimationForDelivery[]>([]);
   const [estimatedList, setEstimatedList] = useState<AvailableEstimationForDelivery[]>([]);
+  const [historicList, setHistoricList] = useState<AvailableEstimationForDelivery[]>([]);
   const [profiles, setProfiles] = useState<Record<string, { name: string; photo: string | null; city: string | null; latitude: number | null; longitude: number | null; rating: string }>>({});
   const [productTitles, setProductTitles] = useState<Record<string, string>>({});
   const [productImages, setProductImages] = useState<Record<string, string>>({});
   const [availableLoading, setAvailableLoading] = useState(true);
   const [acceptedLoading, setAcceptedLoading] = useState(true);
   const [estimatedLoading, setEstimatedLoading] = useState(true);
+  const [historicLoading, setHistoricLoading] = useState(true);
   const [selectedOrderIdForMap, setSelectedOrderIdForMap] = useState<string | null>(null);
+  const [estimationModalOrderId, setEstimationModalOrderId] = useState<string | null>(null);
   const fullscreenProgress = useSharedValue(0);
   const insets = useSafeAreaInsets();
   const headerTop = insets.top + (Platform.OS === "ios" ? 8 : 12);
@@ -552,6 +584,62 @@ export default function WorkspaceScreen() {
     }
   }, []);
 
+  const loadHistoric = useCallback(async () => {
+    try {
+      setHistoricLoading(true);
+      const data = await getDeliveredEstimationsForDeliveryApi();
+      setHistoricList(data);
+      const userIds = new Set<string>();
+      const productIds = new Set<string>();
+      data.forEach(({ order }) => {
+        userIds.add(order.clientId);
+        userIds.add(order.patissiereId);
+        order.items.forEach((i) => i.productId && productIds.add(i.productId));
+      });
+      const profilesRes = await Promise.all(
+        Array.from(userIds).map(async (userId) => {
+          try {
+            const res = await getProfileById(userId);
+            const u = res?.data?.user;
+            const rating = res?.data?.rating?.average != null ? res.data.rating.average.toFixed(1) : "—";
+            if (u) return [userId, { name: u.name ?? "—", photo: u.photo ?? null, city: u.city ?? null, latitude: u.latitude ?? null, longitude: u.longitude ?? null, rating }] as const;
+          } catch {
+            // ignore
+          }
+          return [userId, { name: "—", photo: null, city: null, latitude: null, longitude: null, rating: "—" }] as const;
+        })
+      );
+      const productRes = await Promise.all(
+        Array.from(productIds).map(async (productId) => {
+          try {
+            const p = await fetchProductByIdApi(productId);
+            const title = p?.title ?? productId.slice(-6);
+            const img = p?.images?.[0];
+            const imageUrl = img ? (buildPhotoUrl(img) ?? undefined) : undefined;
+            return [productId, { title, imageUrl }] as const;
+          } catch {
+            return [productId, { title: productId.slice(-6), imageUrl: undefined }] as const;
+          }
+        })
+      );
+      const nextProfiles: Record<string, { name: string; photo: string | null; city: string | null; latitude: number | null; longitude: number | null; rating: string }> = {};
+      profilesRes.forEach(([id, pr]) => { nextProfiles[id] = pr; });
+      setProfiles((p) => ({ ...p, ...nextProfiles }));
+      const nextTitles: Record<string, string> = {};
+      const nextImages: Record<string, string> = {};
+      productRes.forEach(([id, { title, imageUrl }]) => {
+        nextTitles[id] = title;
+        if (imageUrl) nextImages[id] = imageUrl;
+      });
+      setProductTitles((t) => ({ ...t, ...nextTitles }));
+      setProductImages((i) => ({ ...i, ...nextImages }));
+    } catch {
+      setHistoricList([]);
+    } finally {
+      setHistoricLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadAvailable();
   }, [loadAvailable]);
@@ -565,17 +653,22 @@ export default function WorkspaceScreen() {
   }, [loadEstimated]);
 
   useEffect(() => {
+    loadHistoric();
+  }, [loadHistoric]);
+
+  useEffect(() => {
     const socket = getOrderSocket();
     const handler = () => {
       loadAvailable();
       loadAccepted();
       loadEstimated();
+      loadHistoric();
     };
     socket.on("estimation.created", handler);
     return () => {
       socket.off("estimation.created", handler);
     };
-  }, [loadAvailable, loadAccepted, loadEstimated]);
+  }, [loadAvailable, loadAccepted, loadEstimated, loadHistoric]);
 
   const userLat = userLocation?.lat ?? OSM_DEFAULT.lat;
   const userLng = userLocation?.lng ?? OSM_DEFAULT.lng;
@@ -584,7 +677,8 @@ export default function WorkspaceScreen() {
     const entry =
       availableList.find(({ order }) => order.id === selectedOrderIdForMap) ??
       acceptedList.find(({ order }) => order.id === selectedOrderIdForMap) ??
-      estimatedList.find(({ order }) => order.id === selectedOrderIdForMap);
+      estimatedList.find(({ order }) => order.id === selectedOrderIdForMap) ??
+      historicList.find(({ order }) => order.id === selectedOrderIdForMap);
     if (!entry) return [];
     const { order } = entry;
     const out: MapMarker[] = [];
@@ -604,7 +698,7 @@ export default function WorkspaceScreen() {
       });
     }
     return out;
-  }, [availableList, acceptedList, estimatedList, profiles, selectedOrderIdForMap]);
+  }, [availableList, acceptedList, estimatedList, historicList, profiles, selectedOrderIdForMap]);
 
   const handleCardPressForMap = useCallback((orderId: string) => {
     setSelectedOrderIdForMap((prev) => (prev === orderId ? null : orderId));
@@ -615,7 +709,7 @@ export default function WorkspaceScreen() {
       if (estimationId) {
         try {
           await confirmEstimationApi(estimationId);
-          await Promise.all([loadAvailable(), loadAccepted(), loadEstimated()]);
+          await Promise.all([loadAvailable(), loadAccepted(), loadEstimated(), loadHistoric()]);
         } catch {
           // show error optionally
         }
@@ -623,7 +717,7 @@ export default function WorkspaceScreen() {
         router.push(`/(main)/delivery-order/${orderId}` as any);
       }
     },
-    [router, loadAvailable, loadAccepted, loadEstimated]
+    [router, loadAvailable, loadAccepted, loadEstimated, loadHistoric]
   );
 
   const buildOrderItem = useCallback(
@@ -642,6 +736,7 @@ export default function WorkspaceScreen() {
               order.deliveryLongitude
             ).toFixed(1) + " km away"
           : "—";
+      const locationLabel = client?.city?.trim() ? client.city : "—";
       const itemsStr =
         order.items
           .map((i) => `${i.quantity}x ${productTitles[i.productId] ?? i.productId?.slice(-6) ?? "Item"}`)
@@ -657,6 +752,7 @@ export default function WorkspaceScreen() {
         clientName: client?.name ?? "Client",
         clientPhoto: client?.photo ?? null,
         rating: client?.rating ?? "—",
+        locationLabel,
         tag: client?.city ?? "",
         patissiereName: patissiere?.name ?? "Patissiere",
         patissierePhoto: patissiere?.photo ?? null,
@@ -687,6 +783,11 @@ export default function WorkspaceScreen() {
   const estimatedOrders: WorkspaceOrderItem[] = useMemo(
     () => estimatedList.map((entry) => buildOrderItem(entry, { estimationId: entry.estimation.id })),
     [estimatedList, buildOrderItem]
+  );
+
+  const historicOrders: WorkspaceOrderItem[] = useMemo(
+    () => historicList.map((entry) => buildOrderItem(entry, { estimationId: entry.estimation.id })),
+    [historicList, buildOrderItem]
   );
 
   const enterFullscreen = () => {
@@ -775,6 +876,8 @@ export default function WorkspaceScreen() {
         pointerEvents={isFullScreen ? "none" : "box-none"}
       >
         <View style={[styles.header, { paddingTop: headerTop }]}>
+          <View style={styles.headerSpacer} />
+          <Text style={styles.headerTitle}>Driver Workspace</Text>
           <View style={styles.avatarWrap}>
             {profilePhoto ? (
               <Image source={{ uri: profilePhoto }} style={styles.avatar} />
@@ -784,19 +887,20 @@ export default function WorkspaceScreen() {
               </View>
             )}
           </View>
-          <Text style={styles.headerTitle}>Driver Workspace</Text>
-          <View style={styles.iconBtnSpacer} />
         </View>
 
         <View style={[styles.searchWrap, { top: headerTop + 56 }]}>
-          <MaterialIcons name="search" size={20} color={SLATE_500} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search delivery location"
-            placeholderTextColor={SLATE_400}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
+          <View style={styles.searchBar}>
+            <MaterialIcons name="search" size={20} color={PRIMARY} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search delivery location"
+              placeholderTextColor={SLATE_400}
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+            <MaterialIcons name="mic" size={20} color={SLATE_400} />
+          </View>
         </View>
 
         <View style={styles.controlsWrap}>
@@ -804,14 +908,21 @@ export default function WorkspaceScreen() {
             <Pressable style={styles.zoomBtn}>
               <MaterialIcons name="add" size={22} color={SLATE_600} />
             </Pressable>
-            <Pressable style={styles.zoomBtn}>
+            <Pressable style={[styles.zoomBtn, styles.zoomBtnLast]}>
               <MaterialIcons name="remove" size={22} color={SLATE_600} />
             </Pressable>
           </View>
           <Pressable style={styles.nearMeBtn}>
             <MaterialIcons name="near-me" size={24} color={PRIMARY} />
           </Pressable>
+          <Pressable style={styles.fullscreenBtn} onPress={enterFullscreen}>
+            <MaterialIcons name="fullscreen" size={22} color="#fff" />
+          </Pressable>
         </View>
+
+        <Pressable style={[styles.backBtn, { top: headerTop + 4 }]} onPress={() => router.back()}>
+          <MaterialIcons name="arrow-back" size={24} color={TEXT_PRIMARY} />
+        </Pressable>
 
         <BottomOrdersSheet
           headerTop={headerTop}
@@ -822,22 +933,38 @@ export default function WorkspaceScreen() {
               ? availableOrders
               : activeTab === "Accepted"
                 ? acceptedOrders
-                : estimatedOrders
+                : activeTab === "Estimated"
+                  ? estimatedOrders
+                  : historicOrders
           }
           selectedOrderIdForMap={selectedOrderIdForMap}
           onCardPressForMap={handleCardPressForMap}
           onViewOrder={(id) => router.push(`/(main)/delivery-order/${id}` as any)}
           onConfirmOrder={handleConfirmOrder}
+          onOpenEstimationModal={(id) => setEstimationModalOrderId(id)}
           loading={
             (activeTab === "Available" && availableLoading) ||
             (activeTab === "Accepted" && acceptedLoading) ||
-            (activeTab === "Estimated" && estimatedLoading)
+            (activeTab === "Estimated" && estimatedLoading) ||
+            (activeTab === "Historic" && historicLoading)
           }
+          floatingAddButtonVisible={!!(selectedOrderIdForMap && activeTab === "Available")}
+          onFloatingAddPress={() => selectedOrderIdForMap && setEstimationModalOrderId(selectedOrderIdForMap)}
         />
 
-        <Pressable style={[styles.backBtn, { top: headerTop + 4 }]} onPress={() => router.back()}>
-          <MaterialIcons name="arrow-back" size={24} color={TEXT_PRIMARY} />
-        </Pressable>
+        <EstimationCreateModal
+          visible={!!estimationModalOrderId}
+          orderId={estimationModalOrderId ?? ""}
+          role="delivery"
+          onClose={() => setEstimationModalOrderId(null)}
+          onSuccess={() => {
+            setEstimationModalOrderId(null);
+            loadAvailable();
+            loadEstimated();
+            loadAccepted();
+          }}
+        />
+
       </Animated.View>
 
       {/* Fullscreen overlay: fades in when entering fullscreen; must not receive touches when closed */}
@@ -853,15 +980,6 @@ export default function WorkspaceScreen() {
         </Pressable>
       </Animated.View>
 
-      {/* Dedicated fullscreen expand button on top so first tap always works */}
-      {!isFullScreen && (
-        <Pressable
-          style={[styles.fullscreenExpandTouchTarget, { top: headerTop + 4 }]}
-          onPress={enterFullscreen}
-        >
-          <MaterialIcons name="fullscreen" size={22} color={PRIMARY} />
-        </Pressable>
-      )}
     </GestureHandlerRootView>
   );
 }
@@ -879,6 +997,7 @@ const styles = StyleSheet.create({
   loadingText: { marginTop: 12, fontSize: 14, color: SLATE_600 },
   webview: { flex: 1, backgroundColor: "transparent" },
   header: {
+    // backgroundColor: "red",
     position: "absolute",
     top: 0,
     left: 0,
@@ -887,60 +1006,63 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingBottom: 10,
-    backgroundColor: "rgba(255,255,255,0.9)",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(218,27,97,0.1)",
+    paddingBottom: 12,
+    // backgroundColor: "rgba(248,246,247,0.9)",
+    // borderBottomWidth: 1,
+    // borderBottomColor: "rgba(218,27,97,0.1)",
     zIndex: 20,
   },
+  headerSpacer: { width: 40 },
   avatarWrap: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(218,27,97,0.1)",
+    borderWidth: 2,
+    borderColor: PRIMARY,
     overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatar: { width: 32, height: 32, borderRadius: 16 },
-  avatarPlaceholder: { alignItems: "center", justifyContent: "center" },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: TEXT_PRIMARY,
-  },
-  iconBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: SURFACE,
-    borderWidth: 1,
-    borderColor: "rgba(218,27,97,0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconBtnSpacer: { width: 48, height: 48 },
-  searchWrap: {
-    position: "absolute",
-    top: 120,
-    left: 16,
-    right: 80,
-    flexDirection: "row",
-    alignItems: "center",
-    height: 48,
-    backgroundColor: SURFACE,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: "rgba(218,27,97,0.1)",
-    zIndex: 10,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
-    shadowRadius: 8,
+    shadowRadius: 4,
     elevation: 3,
   },
-  searchIcon: { marginRight: 8 },
+  avatar: { width: "100%", height: "100%", borderRadius: 18 },
+  avatarPlaceholder: {
+    backgroundColor: PRIMARY_05,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    flex: 1,
+    fontSize: 25,
+    fontWeight: "900",
+    color: TEXT_PRIMARY,
+    letterSpacing: -0.3,
+    textAlign: "center",
+  },
+  searchWrap: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    zIndex: 20,
+  },
+  searchBar: {
+    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: "rgba(255,255,255,0.95)",
+    borderRadius: 30,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  searchIcon: {},
   searchInput: {
     flex: 1,
     fontSize: 14,
@@ -950,41 +1072,62 @@ const styles = StyleSheet.create({
   controlsWrap: {
     position: "absolute",
     right: 16,
-    top: 180,
-    zIndex: 10,
-    gap: 12,
+    top: 178,
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 8,
+    zIndex: 20,
   },
   zoomCard: {
     backgroundColor: SURFACE,
-    borderRadius: 12,
+    borderRadius: 25,
     borderWidth: 1,
-    borderColor: "rgba(218,27,97,0.1)",
+    borderColor: "rgba(218,27,97,0.05)",
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
   zoomBtn: {
-    padding: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     borderBottomWidth: 1,
-    borderColor: "rgba(218,27,97,0.05)",
+    borderBottomColor: BORDER_SUBTLE,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  zoomBtnLast: {
+    borderBottomWidth: 0,
   },
   nearMeBtn: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: 100,
     backgroundColor: SURFACE,
     borderWidth: 1,
-    borderColor: "rgba(218,27,97,0.1)",
+    borderColor: "rgba(218,27,97,0.05)",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  fullscreenBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 100,
+    backgroundColor: PRIMARY,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 8,
   },
   fullscreenOverlay: {
     position: "absolute",
@@ -1012,65 +1155,80 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  fullscreenExpandTouchTarget: {
-    position: "absolute",
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: SURFACE,
-    borderWidth: 1,
-    borderColor: "rgba(218,27,97,0.1)",
-    alignItems: "center",
-    justifyContent: "center",
-    zIndex: 35,
-  },
   bottomSheet: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: SURFACE,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderTopWidth: 1,
-    borderColor: "rgba(218,27,97,0.1)",
+    backgroundColor: BACKGROUND_LIGHT,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 0,
     paddingTop: 12,
     paddingBottom: 24,
     zIndex: 30,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    shadowOpacity: 0.12,
+    shadowRadius: 30,
     elevation: 16,
+    overflow: "visible",
+  },
+  bottomSheetInner: {
+    flex: 1,
     overflow: "hidden",
   },
   dragHandle: {
     width: 48,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(218,27,97,0.2)",
+    backgroundColor: SLATE_200,
     alignSelf: "center",
     marginBottom: 12,
   },
-  tabsRow: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
+  ordersScrollWrap: {
+    flex: 1,
+    position: "relative",
+  },
+  floatingAddBtn: {
+    position: "absolute",
+    left: 16,
+    top: -56,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#D81B60",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 40,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  tabsScroll: {
+    maxHeight: 44,
     borderBottomWidth: 1,
     borderBottomColor: "rgba(218,27,97,0.05)",
   },
+  tabsRow: {
+    flexDirection: "row",
+    paddingHorizontal: 8,
+    alignItems: "stretch",
+  },
   tab: {
-    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 12,
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderBottomWidth: 2,
     borderBottomColor: "transparent",
   },
   tabActive: { borderBottomColor: PRIMARY },
-  tabText: { fontSize: 14, fontWeight: "600", color: SLATE_400 },
+  tabText: { fontSize: 12, fontWeight: "600", color: SLATE_400 },
   tabTextActive: { fontWeight: "700", color: PRIMARY },
   ordersScroll: { flex: 1 },
   ordersScrollContent: { padding: 16, gap: 12 },
@@ -1085,140 +1243,170 @@ const styles = StyleSheet.create({
     backgroundColor: SURFACE,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: BORDER,
+    borderColor: BORDER_SUBTLE,
+    marginBottom: 16,
+    opacity: 0.9,
   },
   orderCardHighlight: {
+    borderRadius: 12,
     backgroundColor: "rgba(218,27,97,0.05)",
-    borderColor: "rgba(218,27,97,0.1)",
+    borderWidth: 2,
+    borderColor: "#D81B60",
+    opacity: 1,
   },
-  orderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  orderLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  orderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  orderLeft: { flex: 1, flexDirection: "row", alignItems: "center", gap: 12, minWidth: 0 },
   orderAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: SLATE_400,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#f1f5f9",
+    borderWidth: 1,
+    borderColor: BORDER_SUBTLE,
   },
   orderAvatarPlaceholder: { alignItems: "center", justifyContent: "center" },
-  orderName: { fontSize: 14, fontWeight: "700", color: TEXT_PRIMARY },
-  orderMeta: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 },
-  orderMetaText: { fontSize: 11, color: PRIMARY, fontWeight: "500" },
-  patissiereFrom: { fontSize: 10, color: SLATE_500, marginTop: 2 },
-  orderRight: { alignItems: "flex-end" },
-  orderPrice: { fontSize: 12, fontWeight: "700", color: PRIMARY },
-  orderDistance: { fontSize: 10, color: SLATE_500, marginTop: 2 },
+  orderNameBlock: { flex: 1, minWidth: 0 },
+  orderName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
+    lineHeight: 20,
+  },
+  orderMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  orderMetaText: { fontSize: 12, color: SLATE_500, fontWeight: "600" },
+  orderMetaDot: { fontSize: 12, color: SLATE_400, marginHorizontal: 2 },
+  orderRight: {
+    alignItems: "flex-end",
+    justifyContent: "center",
+    marginLeft: 8,
+    flexShrink: 0,
+  },
+  orderPrice: { fontSize: 20, fontWeight: "800", color: PRIMARY },
   itemThumbnailsRow: {
     flexDirection: "row",
-    gap: 6,
-    marginTop: 8,
+    gap: 8,
+    marginBottom: 16,
   },
   itemThumb: {
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: BORDER_SUBTLE,
+    backgroundColor: "#f1f5f9",
   },
-  patissiereDeliveryRow: {
+  itemThumbMore: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "rgba(218,27,97,0.1)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemThumbMoreText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: PRIMARY,
+  },
+  patissierePaymentRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  patissierePill: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginTop: 8,
-    flexWrap: "wrap",
+    backgroundColor: "#f8fafc",
+    paddingVertical: 4,
+    paddingLeft: 4,
+    paddingRight: 12,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: BORDER_SUBTLE,
+    maxWidth: "70%",
   },
-  smallAvatar: {
+  patissierePillAvatar: {
     width: 24,
     height: 24,
     borderRadius: 12,
   },
+  patissierePillText: { fontSize: 12, color: SLATE_600 },
+  patissierePillName: { fontWeight: "700" },
   smallAvatarPlaceholder: {
     backgroundColor: PRIMARY_05,
     alignItems: "center",
     justifyContent: "center",
   },
-  deliveryChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginLeft: "auto",
-  },
-  deliveryChipText: { fontSize: 11, fontWeight: "700", color: SLATE_600, maxWidth: 80 },
-  paymentStatusRow: {
+  paymentStatusBadge: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 8,
     paddingVertical: 4,
     paddingHorizontal: 8,
-    borderRadius: 6,
-    alignSelf: "flex-start",
+    borderRadius: 9999,
   },
-  paymentStatusPaid: { backgroundColor: "#dcfce7" },
-  paymentStatusNotPaid: { backgroundColor: "#fffbeb" },
-  paymentStatusText: { fontSize: 11, fontWeight: "700" },
-  paymentStatusTextPaid: { color: "#15803d" },
-  paymentStatusTextNotPaid: { color: "#b45309" },
+  paymentStatusPaid: { backgroundColor: "rgba(16,185,129,0.12)" },
+  paymentStatusNotPaid: { backgroundColor: "rgba(234,88,12,0.12)" },
+  paymentStatusText: { fontSize: 10, fontWeight: "800", letterSpacing: 0.3 },
+  paymentStatusTextPaid: { color: "#059669" },
+  paymentStatusTextNotPaid: { color: "#ea580c" },
   cardActionsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginTop: 12,
+    gap: 8,
+    marginTop: 16,
+  },
+  primaryActionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: PRIMARY,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  primaryActionBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#ffffff",
   },
   viewDetailsBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
+    width: 48,
+    height: 48,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(218,27,97,0.3)",
-    backgroundColor: "rgba(218,27,97,0.06)",
-  },
-  viewDetailsBtnText: { fontSize: 13, fontWeight: "600", color: PRIMARY },
-  confirmOrderCardBtn: {
-    flexDirection: "row",
+    borderColor: BORDER,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: "#16a34a",
   },
-  confirmOrderCardBtnText: { fontSize: 12, fontWeight: "700", color: "#fff" },
-  doneActionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: "#dcfce7",
-    borderWidth: 1,
-    borderColor: "#bbf7d0",
-  },
-  doneActionBtnText: { fontSize: 12, fontWeight: "700", color: "#15803d" },
   doneBadge: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: "#dcfce7",
-    borderWidth: 1,
-    borderColor: "#bbf7d0",
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "#059669",
   },
-  doneBadgeText: { fontSize: 12, fontWeight: "700", color: "#15803d" },
+  doneBadgeText: { fontSize: 14, fontWeight: "700", color: "#ffffff" },
   backBtn: {
     position: "absolute",
-    left: 8,
+    left: 16,
     width: 40,
     height: 40,
     borderRadius: 20,
+    backgroundColor: SURFACE,
+    borderWidth: 1,
+    borderColor: "rgba(218,27,97,0.1)",
     alignItems: "center",
     justifyContent: "center",
     zIndex: 25,

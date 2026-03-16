@@ -29,8 +29,14 @@ export class Rating {
 
 export const RatingSchema = SchemaFactory.createForClass(Rating);
 
-// Prevent duplicate ratings per user per order/product
+// One rating per user per (toUserId, orderId) for delivery/patissiere ratings
 RatingSchema.index({ fromUserId: 1, toUserId: 1, orderId: 1 }, { unique: true, sparse: true });
-RatingSchema.index({ fromUserId: 1, productId: 1 }, { unique: true, sparse: true });
+
+// One rating per user per product (only when productId is set; allow multiple ratings with productId=null for delivery/patissiere)
+RatingSchema.index(
+  { fromUserId: 1, productId: 1 },
+  { unique: true, partialFilterExpression: { productId: { $ne: null, $exists: true } } },
+);
+
 RatingSchema.index({ toUserId: 1 });
 RatingSchema.index({ productId: 1 });

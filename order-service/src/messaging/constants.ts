@@ -21,6 +21,8 @@ export const ORDERS_PATTERNS = {
   ESTIMATION_CONFIRM: 'estimation/confirm',
   ESTIMATION_FIND_ACCEPTED_DELIVERY: 'estimation/find-accepted-delivery',
   ESTIMATION_FIND_ESTIMATED_DELIVERY: 'estimation/find-estimated-delivery',
+  ESTIMATION_FIND_DELIVERED_DELIVERY: 'estimation/find-delivered-delivery',
   ESTIMATION_MARK_PAID: 'estimation/mark-paid',
   ESTIMATION_FIND_ONE: 'estimation/find-one',
+  ESTIMATION_ACCEPT_DELIVERY_OFFER: 'estimation/accept-delivery-offer',
 } as const;

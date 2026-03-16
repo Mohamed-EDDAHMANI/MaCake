@@ -201,6 +201,78 @@ export class EstimationService {
   }
 
   /**
+   * Build list of estimations with order + items, only including orders with given status.
+   */
+  private async buildDeliveryEstimationListFromDocsWithOrderStatus(
+    list: Array<{ _id: any; orderId: any; details: string; price: number; userRole: string; status: string; createdBy?: string | null; acceptedBy?: string | null; paidAt?: Date | null; createdAt: Date }>,
+    orderStatus: OrderStatus,
+  ) {
+    const data: Array<{
+      estimation: { id: string; orderId: string; details: string; price: number; userRole: string; status: string; createdBy?: string | null; acceptedBy?: string | null; paidAt?: Date | null; createdAt: Date };
+      order: any;
+    }> = [];
+
+    for (const doc of list) {
+      const orderId = String(doc.orderId);
+      const order = await this.orderService.getOrderWithItemsById(orderId);
+      if (!order || order.status !== orderStatus) continue;
+      data.push({
+        estimation: {
+          id: String(doc._id),
+          orderId,
+          details: doc.details,
+          price: doc.price,
+          userRole: doc.userRole,
+          status: doc.status,
+          createdBy: doc.createdBy ?? null,
+          acceptedBy: doc.acceptedBy ?? null,
+          paidAt: doc.paidAt ?? null,
+          createdAt: doc.createdAt,
+        },
+        order,
+      });
+    }
+
+    return { success: true, data };
+  }
+
+  /**
+   * Build list of estimations with order + items, excluding orders with given status (e.g. delivered for Accepted tab).
+   */
+  private async buildDeliveryEstimationListFromDocsExcludingOrderStatus(
+    list: Array<{ _id: any; orderId: any; details: string; price: number; userRole: string; status: string; createdBy?: string | null; acceptedBy?: string | null; paidAt?: Date | null; createdAt: Date }>,
+    excludeStatus: OrderStatus,
+  ) {
+    const data: Array<{
+      estimation: { id: string; orderId: string; details: string; price: number; userRole: string; status: string; createdBy?: string | null; acceptedBy?: string | null; paidAt?: Date | null; createdAt: Date };
+      order: any;
+    }> = [];
+
+    for (const doc of list) {
+      const orderId = String(doc.orderId);
+      const order = await this.orderService.getOrderWithItemsById(orderId);
+      if (!order || order.status === excludeStatus) continue;
+      data.push({
+        estimation: {
+          id: String(doc._id),
+          orderId,
+          details: doc.details,
+          price: doc.price,
+          userRole: doc.userRole,
+          status: doc.status,
+          createdBy: doc.createdBy ?? null,
+          acceptedBy: doc.acceptedBy ?? null,
+          paidAt: doc.paidAt ?? null,
+          createdAt: doc.createdAt,
+        },
+        order,
+      });
+    }
+
+    return { success: true, data };
+  }
+
+  /**
    * Build list of estimations with order + items (filter by single role/status/createdBy).
    */
   private async buildDeliveryEstimationList(
@@ -216,6 +288,7 @@ export class EstimationService {
 
   /**
    * Get estimations that are confirmed and either created by this delivery or accepted/confirmed by this delivery (Accepted tab).
+   * Excludes orders with status delivered (those appear only in Historic).
    */
   async findAcceptedDeliveryEstimations(userId: string) {
     const list = await this.estimationModel
@@ -229,7 +302,7 @@ export class EstimationService {
       .sort({ createdAt: -1 })
       .lean()
       .exec();
-    return this.buildDeliveryEstimationListFromDocs(list);
+    return this.buildDeliveryEstimationListFromDocsExcludingOrderStatus(list, OrderStatus.DELIVERED);
   }
 
   /**
@@ -241,6 +314,24 @@ export class EstimationService {
       status: EstimationStatus.PENDING,
       createdBy: userId,
     });
+  }
+
+  /**
+   * Get all orders done by this delivery (order status = delivered). For Historic tab.
+   */
+  async findDeliveredDeliveryEstimations(userId: string) {
+    const list = await this.estimationModel
+      .find({
+        status: EstimationStatus.CONFIRMED,
+        $or: [
+          { userRole: EstimationUserRole.DELIVERY, createdBy: userId },
+          { userRole: EstimationUserRole.CLIENT, acceptedBy: userId },
+        ],
+      })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+    return this.buildDeliveryEstimationListFromDocsWithOrderStatus(list, OrderStatus.DELIVERED);
   }
 
   /**
@@ -292,6 +383,72 @@ export class EstimationService {
         createdAt: doc.createdAt,
       })),
     };
+  }
+
+  /**
+   * Client accepts a delivery's offer: set client estimation acceptedBy to delivery userId and status confirmed.
+   */
+  async acceptDeliveryOffer(deliveryEstimationId: string, clientUserId: string) {
+    if (!deliveryEstimationId || !Types.ObjectId.isValid(deliveryEstimationId)) {
+      return { success: false, message: 'Invalid estimation id', statusCode: 400 };
+    }
+    if (!clientUserId || typeof clientUserId !== 'string') {
+      return { success: false, message: 'Unauthorized', statusCode: 401 };
+    }
+    let deliveryEst: EstimationDocument | null = null;
+    try {
+      deliveryEst = await this.estimationModel.findById(deliveryEstimationId).exec();
+    } catch (err: any) {
+      this.logger.warn(`acceptDeliveryOffer findById error: ${err?.message ?? err}`);
+      return { success: false, message: 'Invalid estimation id', statusCode: 400 };
+    }
+    if (!deliveryEst) {
+      return { success: false, message: 'Estimation not found', statusCode: 404 };
+    }
+    if ((deliveryEst as any).userRole !== EstimationUserRole.DELIVERY) {
+      return { success: false, message: 'Not a delivery estimation', statusCode: 400 };
+    }
+    const orderId = String(deliveryEst.orderId);
+    const deliveryUserId = (deliveryEst as any).createdBy ?? null;
+    if (!deliveryUserId) {
+      return { success: false, message: 'Invalid delivery estimation', statusCode: 400 };
+    }
+    if (!Types.ObjectId.isValid(orderId)) {
+      return { success: false, message: 'Invalid order id', statusCode: 400 };
+    }
+    const order = await this.orderService.getOrderWithItemsById(orderId);
+    if (!order) {
+      return { success: false, message: 'Order not found', statusCode: 404 };
+    }
+    if (String(order.clientId) !== String(clientUserId)) {
+      return { success: false, message: 'Only the order client can accept a delivery offer', statusCode: 403 };
+    }
+    let clientEst: EstimationDocument | null = null;
+    try {
+      clientEst = await this.estimationModel
+        .findOne({
+          orderId: new Types.ObjectId(orderId),
+          userRole: EstimationUserRole.CLIENT,
+        })
+        .exec();
+    } catch (err: any) {
+      this.logger.warn(`acceptDeliveryOffer findOne client estimation error: ${err?.message ?? err}`);
+      return { success: false, message: 'Client estimation lookup failed', statusCode: 500 };
+    }
+    if (!clientEst) {
+      return { success: false, message: 'Client estimation not found', statusCode: 404 };
+    }
+    (clientEst as any).acceptedBy = deliveryUserId;
+    clientEst.status = EstimationStatus.CONFIRMED;
+    try {
+      await clientEst.save();
+    } catch (err: any) {
+      this.logger.error(`acceptDeliveryOffer save error: ${err?.message ?? err}`, err?.stack);
+      return { success: false, message: 'Failed to save acceptance', statusCode: 500 };
+    }
+    const data = this.mapEstimation(clientEst);
+    this.emitEstimationCreated(orderId);
+    return { success: true, message: 'Delivery offer accepted', data };
   }
 
   /**

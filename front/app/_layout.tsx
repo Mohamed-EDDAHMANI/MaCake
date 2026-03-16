@@ -49,8 +49,6 @@ export default function RootLayout() {
               <Stack.Screen name="(auth)" />
               <Stack.Screen name="(main)" />
               <Stack.Screen name="(client)" />
-              <Stack.Screen name="(patissiere)" />
-              <Stack.Screen name="(livreur)" />
             </Stack>
             <StatusBar style="dark" />
           </>

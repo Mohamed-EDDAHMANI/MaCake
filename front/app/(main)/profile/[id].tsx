@@ -1,6 +1,7 @@
 /**
  * Dynamic profile screen: view any user's profile by id.
  * Loads user + rating + followers from backend (GET /s1/auth/profile/:id).
+ * Subscribes to rating.created to refetch when this user is rated.
  */
 import { useLocalSearchParams } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -8,6 +9,7 @@ import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { ProfileContent } from "@/components/common/profile-content";
 import { getProfileById } from "@/store/features/auth";
 import type { GetProfileResponse } from "@/store/features/auth";
+import { getRatingSocket, type RatingCreatedPayload } from "@/lib/rating-socket";
 
 export default function UserProfileScreen() {
   const params = useLocalSearchParams<{ id: string }>();
@@ -38,6 +40,19 @@ export default function UserProfileScreen() {
   useEffect(() => {
     fetchProfile();
   }, [fetchProfile]);
+
+  // Real-time: refetch when this profile is rated
+  useEffect(() => {
+    if (!id) return;
+    const socket = getRatingSocket();
+    const handler = (payload: RatingCreatedPayload) => {
+      if (payload.toUserId === id) fetchProfile();
+    };
+    socket.on("rating.created", handler);
+    return () => {
+      socket.off("rating.created", handler);
+    };
+  }, [id, fetchProfile]);
 
   if (!id) {
     return (

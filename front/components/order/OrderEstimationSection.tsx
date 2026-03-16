@@ -7,12 +7,14 @@ import {
   ScrollView,
   Pressable,
   Image,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
   PRIMARY,
   SURFACE,
   TEXT_PRIMARY,
+  SLATE_200,
   SLATE_500,
   SLATE_600,
   SLATE_700,
@@ -22,10 +24,12 @@ import {
 } from "@/constants/colors";
 import {
   getEstimationsByOrderIdApi,
+  acceptDeliveryOfferApi,
   type EstimationItem,
 } from "@/store/features/estimation";
 import { getOrderSocket } from "@/lib/order-socket";
 import { getProfileById } from "@/store/features/auth/authApi";
+import type { ProfileRating } from "@/store/features/auth/authApi";
 import { buildPhotoUrl } from "@/lib/utils";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -152,15 +156,29 @@ export function OrderEstimationSection({
             )}
           </View>
 
-          {/* Part 2: Delivery estimations */}
+          {/* Part 2: Delivery estimations (horizontal scroll — cards one after another) */}
           <View style={styles.part}>
-            <Text style={styles.partTitle}>Delivery estimations</Text>
+            <Text style={styles.partTitle}>
+              Delivery estimations {deliveryEstimations.length > 0 ? `(${deliveryEstimations.length})` : ""}
+            </Text>
             {deliveryEstimations.length > 0 ? (
-              <View style={styles.estimationList}>
+              <ScrollView
+                horizontal
+                style={styles.deliveryEstimationsScroll}
+                contentContainerStyle={styles.deliveryEstimationsScrollContent}
+                showsHorizontalScrollIndicator={true}
+              >
                 {deliveryEstimations.map((e) => (
-                  <EstimationCard key={e.id} item={e} />
+                  <View key={e.id} style={styles.deliveryEstimationCardWrap}>
+                    <DeliveryEstimationCard
+                      item={e}
+                      isClient={isClient}
+                      canAccept={!!(isClient && !acceptedClientEstimation)}
+                      onAccept={fetchEstimations}
+                    />
+                  </View>
                 ))}
-              </View>
+              </ScrollView>
             ) : (
               <Text style={styles.emptyText}>No delivery estimations yet.</Text>
             )}
@@ -238,6 +256,145 @@ function ClientAcceptedEstimationCard({
   );
 }
 
+/** 5-star row: filled color reflects rating (e.g. 4.2 → 4 filled amber, 1 outline). */
+function StarRating({
+  rating,
+  count,
+  starSize = 14,
+}: {
+  rating: number;
+  count: number;
+  starSize?: number;
+}) {
+  const clamped = Math.min(5, Math.max(0, rating));
+  const full = Math.round(clamped);
+  const empty = 5 - full;
+  const filledColor = "#f59e0b";
+  const outlineColor = "#e2e8f0";
+
+  return (
+    <View style={styles.starRatingRow}>
+      {Array.from({ length: full }, (_, i) => (
+        <MaterialIcons key={`f-${i}`} name="star" size={starSize} color={filledColor} />
+      ))}
+      {Array.from({ length: empty }, (_, i) => (
+        <MaterialIcons key={`e-${i}`} name="star-border" size={starSize} color={outlineColor} />
+      ))}
+      <Text style={styles.ratingCount}>({count})</Text>
+    </View>
+  );
+}
+
+function DeliveryEstimationCard({
+  item,
+  isClient,
+  canAccept,
+  onAccept,
+}: {
+  item: EstimationItem;
+  isClient: boolean;
+  canAccept: boolean;
+  onAccept: () => void;
+}) {
+  const [profile, setProfile] = useState<{
+    name: string;
+    photo: string | null;
+    rating: ProfileRating;
+  } | null>(null);
+  const [accepting, setAccepting] = useState(false);
+
+  useEffect(() => {
+    const deliveryId = item.createdBy ?? null;
+    if (!deliveryId) {
+      setProfile(null);
+      return;
+    }
+    let cancelled = false;
+    getProfileById(deliveryId)
+      .then((res) => {
+        if (cancelled || !res?.data) return;
+        const u = (res.data as { user?: { name?: string; photo?: string | null }; rating?: ProfileRating }).user;
+        const rating = (res.data as { rating?: ProfileRating }).rating ?? { average: 0, count: 0 };
+        if (u) {
+          setProfile({
+            name: u.name ?? "Delivery",
+            photo: u.photo ?? null,
+            rating,
+          });
+        } else {
+          setProfile({ name: "Delivery", photo: null, rating: { average: 0, count: 0 } });
+        }
+      })
+      .catch(() => setProfile({ name: "Delivery", photo: null, rating: { average: 0, count: 0 } }));
+    return () => {
+      cancelled = true;
+    };
+  }, [item.createdBy]);
+
+  const handleAccept = async () => {
+    if (!canAccept || accepting) return;
+    try {
+      setAccepting(true);
+      const result = await acceptDeliveryOfferApi(item.id);
+      if (result?.success !== true) {
+        Alert.alert(
+          "Could not accept offer",
+          (result as any)?.message ?? "Something went wrong. Try again."
+        );
+        return;
+      }
+      onAccept();
+    } catch (e: any) {
+      const msg =
+        e?.response?.data?.message ??
+        e?.message ??
+        "Could not accept delivery offer. Try again.";
+      Alert.alert("Error", msg);
+    } finally {
+      setAccepting(false);
+    }
+  };
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardRow}>
+        <Text style={styles.cardPrice}>{item.price.toFixed(2)} EUR</Text>
+      </View>
+      <Text style={styles.cardDetails} numberOfLines={4}>{item.details}</Text>
+      <Text style={styles.cardTime}>{formatEstimationTime(item.createdAt)}</Text>
+
+      <View style={styles.deliveryInfoRow}>
+        {profile?.photo ? (
+          <Image source={{ uri: buildPhotoUrl(profile.photo)! }} style={styles.deliveryCardAvatar} />
+        ) : (
+          <View style={[styles.deliveryCardAvatar, styles.deliveryAvatarPlaceholder]}>
+            <MaterialIcons name="local-shipping" size={20} color={PRIMARY} />
+          </View>
+        )}
+        <View style={styles.deliveryInfoBlock}>
+          <Text style={styles.deliveryName}>{profile?.name ?? "—"}</Text>
+          <StarRating
+            rating={profile?.rating?.average ?? 0}
+            count={profile?.rating?.count ?? 0}
+            starSize={14}
+          />
+        </View>
+      </View>
+
+      {isClient && canAccept ? (
+        <Pressable
+          style={[styles.acceptOfferBtn, accepting && styles.acceptOfferBtnDisabled]}
+          onPress={handleAccept}
+          disabled={accepting}
+        >
+          <MaterialIcons name="check-circle" size={18} color="#fff" />
+          <Text style={styles.acceptOfferBtnText}>{accepting ? "Accepting..." : "Accept"}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 function EstimationCard({ item }: { item: EstimationItem }) {
   return (
     <View style={styles.card}>
@@ -287,7 +444,7 @@ const styles = StyleSheet.create({
     color: SLATE_500,
     fontWeight: "600",
   },
-  scroll: { maxHeight: 340 },
+  scroll: { maxHeight: 480 },
   scrollContent: { padding: 14, paddingBottom: 20 },
   part: {
     marginBottom: 18,
@@ -299,6 +456,20 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.6,
     marginBottom: 10,
+  },
+  deliveryEstimationsScroll: {
+    marginHorizontal: -14,
+  },
+  deliveryEstimationsScrollContent: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    paddingRight: 14,
+  },
+  deliveryEstimationCardWrap: {
+    width: 280,
+    flexShrink: 0,
   },
   estimationList: { gap: 10 },
   card: {
@@ -427,5 +598,49 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: SLATE_500,
     fontStyle: "italic",
+  },
+  starRatingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    marginTop: 4,
+  },
+  ratingCount: {
+    fontSize: 12,
+    color: SLATE_600,
+    fontWeight: "600",
+    marginLeft: 4,
+  },
+  deliveryInfoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: BORDER_SUBTLE,
+  },
+  deliveryCardAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: SLATE_200,
+  },
+  deliveryInfoBlock: { flex: 1, minWidth: 0 },
+  acceptOfferBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#15803d",
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginTop: 12,
+  },
+  acceptOfferBtnDisabled: { opacity: 0.7 },
+  acceptOfferBtnText: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: "#fff",
   },
 });

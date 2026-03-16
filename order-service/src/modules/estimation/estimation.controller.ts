@@ -1,4 +1,10 @@
-import { Controller } from '@nestjs/common';
+import {
+  Controller,
+  NotFoundException,
+  ForbiddenException,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { MessagePattern, Payload } from '@nestjs/microservices';
 import { EstimationService } from './estimation.service';
 import { CreateEstimationDto } from './dto/create-estimation.dto';
@@ -55,6 +61,12 @@ export class EstimationController {
     return this.estimationService.findEstimatedDeliveryEstimations(userId);
   }
 
+  @MessagePattern(ORDERS_PATTERNS.ESTIMATION_FIND_DELIVERED_DELIVERY)
+  findDeliveredDeliveryEstimations(@Payload() payload: { user?: { sub?: string } }) {
+    const userId = payload?.user?.sub ?? '';
+    return this.estimationService.findDeliveredDeliveryEstimations(userId);
+  }
+
   @MessagePattern(ORDERS_PATTERNS.ESTIMATION_MARK_PAID)
   markEstimationPaid(@Payload() payload: { params: { id: string } }) {
     const estimationId = payload?.params?.id ?? (payload as any)?.params?.estimationId ?? '';
@@ -65,5 +77,22 @@ export class EstimationController {
   findEstimationById(@Payload() payload: { params: { id: string } }) {
     const estimationId = payload?.params?.id ?? (payload as any)?.params?.estimationId ?? '';
     return this.estimationService.findEstimationById(estimationId);
+  }
+
+  @MessagePattern(ORDERS_PATTERNS.ESTIMATION_ACCEPT_DELIVERY_OFFER)
+  async acceptDeliveryOffer(
+    @Payload() payload: { params: { id: string }; user?: { sub?: string } },
+  ) {
+    const estimationId = payload?.params?.id ?? (payload as any)?.params?.estimationId ?? '';
+    const clientUserId = payload?.user?.sub ?? '';
+    const result = await this.estimationService.acceptDeliveryOffer(estimationId, clientUserId);
+    if (!result.success && result.statusCode) {
+      const msg = result.message ?? 'Request failed';
+      if (result.statusCode === 404) throw new NotFoundException(msg);
+      if (result.statusCode === 403) throw new ForbiddenException(msg);
+      if (result.statusCode === 401) throw new UnauthorizedException(msg);
+      if (result.statusCode === 400) throw new BadRequestException(msg);
+    }
+    return result;
   }
 }

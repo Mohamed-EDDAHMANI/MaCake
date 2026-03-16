@@ -24,6 +24,7 @@ import { toggleFollow } from "@/store/features/follow";
 import { toggleProfileLike } from "@/store/features/profileLike";
 import { getPatissiereOrdersApi } from "@/store/features/order/orderApi";
 import { buildPhotoUrl, getProductDetailPath } from "@/lib/utils";
+import { getRatingSocket, type RatingCreatedPayload } from "@/lib/rating-socket";
 import { WalletTab } from "@/components/client/wallet-tab";
 import {
   PRIMARY,
@@ -140,6 +141,21 @@ export function ProfileContent({ menuItems = [], viewedUser, viewedUserStats, sh
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchOwnProfile is stable
   }, [viewedUser, authUser?.id]);
+
+  // Real-time: refetch own profile stats when a rating is created for current user
+  useEffect(() => {
+    const authId = authUser?.id;
+    if (!authId) return;
+    const socket = getRatingSocket();
+    const handler = (payload: RatingCreatedPayload) => {
+      if (payload.toUserId === authId) fetchOwnProfile();
+    };
+    socket.on("rating.created", handler);
+    return () => {
+      socket.off("rating.created", handler);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- fetchOwnProfile in handler is intentional
+  }, [authUser?.id]);
 
   const isOwnProfile = useMemo(() => {
     const a = authUser?.id;
