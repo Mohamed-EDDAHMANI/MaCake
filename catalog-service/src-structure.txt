@@ -1,0 +1,100 @@
+catalog-service/src
+├── app.controller.spec.ts
+├── app.controller.ts
+├── app.module.ts
+├── app.service.ts
+├── catalog.module.ts
+├── endpoints.ts
+├── main.ts
+├── application/
+│   └── use-cases/
+│       ├── category/
+│       │   ├── create-category.use-case.ts
+│       │   ├── find-all-categories.use-case.ts
+│       │   ├── find-category-by-id.use-case.ts
+│       │   ├── find-category-by-name.use-case.ts
+│       │   ├── remove-category.use-case.ts
+│       │   └── update-category.use-case.ts
+│       └── product/
+│           ├── create-product.use-case.ts
+│           ├── delete-product.use-case.ts
+│           ├── filter-products.use-case.ts
+│           ├── find-all-products.use-case.ts
+│           ├── find-one-product.use-case.ts
+│           └── update-product.use-case.ts
+├── common/
+│   ├── decorators/
+│   │   └── validated-body.decorator.ts
+│   ├── exceptions/
+│   │   ├── all-exceptions.filter.ts
+│   │   ├── app.exception.ts
+│   │   └── index.ts
+│   ├── interceptors/
+│   │   └── logging.interceptor.ts
+│   ├── logger/
+│   │   └── logger.config.ts
+│   └── types/
+│       ├── api-response.ts
+│       └── response-helpers.ts
+├── database/
+│   └── mongodb.module.ts
+├── domain/
+│   ├── entities/
+│   │   ├── category.entity.ts
+│   │   └── product.entity.ts
+│   ├── repositories/
+│   │   ├── category.repository.interface.ts
+│   │   └── product.repository.interface.ts
+│   └── value-objects/
+│       └── index.ts
+├── infrastructure/
+│   └── database/
+│       ├── catalog-database.module.ts
+│       ├── mongoose/
+│       │   └── schemas/
+│       │       ├── category.schema.ts
+│       │       └── product.schema.ts
+│       └── repositories/
+│           ├── category.repository.ts
+│           └── product.repository.ts
+├── messaging/
+│   ├── constants.ts
+│   ├── index.ts
+│   └── messaging.module.ts
+├── modules/
+│   ├── category/
+│   │   ├── category.controller.ts
+│   │   ├── category.module.ts
+│   │   ├── category.service.ts
+│   │   ├── dto/
+│   │   │   ├── create-category.dto.ts
+│   │   │   └── update-category.dto.ts
+│   │   └── schemas/
+│   │       └── category.schema.ts
+│   └── product/
+│       ├── product.controller.ts
+│       ├── product.module.ts
+│       ├── product.service.ts
+│       ├── dto/
+│       │   ├── create-product.dto.ts
+│       │   ├── filter-product.pdo.ts
+│       │   └── update-product.dto.ts
+│       └── schemas/
+│           └── product.schema.ts
+├── presentation/
+│   ├── controllers/
+│   │   ├── category.controller.ts
+│   │   └── product.controller.ts
+│   └── dto/
+│       ├── category/
+│       │   ├── create-category.dto.ts
+│       │   └── update-category.dto.ts
+│       └── product/
+│           ├── create-product.dto.ts
+│           ├── filter-product.dto.ts
+│           └── update-product.dto.ts
+├── s3/
+│   ├── s3.module.ts
+│   └── s3.service.ts
+└── services/
+    └── redis.service.ts
