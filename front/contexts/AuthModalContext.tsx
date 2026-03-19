@@ -8,8 +8,8 @@ import {
   Pressable,
   StyleSheet,
   Platform,
-  BlurView,
 } from "react-native";
+import { BlurView } from "expo-blur";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { PRIMARY, PRIMARY_TINT, SLATE_500, SLATE_600, TEXT_PRIMARY } from "@/constants/colors";

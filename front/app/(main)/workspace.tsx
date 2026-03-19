@@ -329,7 +329,9 @@ function BottomOrdersSheet({
                         onConfirmOrder?.(order.id, order.estimationId);
                       }}
                     >
-                      <Text style={styles.primaryActionBtnText}>Accept Order</Text>
+                      <Text style={styles.primaryActionBtnText}>
+                        {activeTab === "Accepted" ? "Finish" : "Accept Order"}
+                      </Text>
                     </Pressable>
                   )}
                   <Pressable

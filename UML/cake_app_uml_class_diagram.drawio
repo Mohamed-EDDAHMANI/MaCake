@@ -1,61 +1,37 @@
 <mxfile host="65bd71144e">
     <diagram name="Cake App UML Class Diagram" id="cake-app-uml">
-        <mxGraphModel dx="739" dy="593" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4000" pageHeight="3000" math="0" shadow="0">
+        <mxGraphModel dx="543" dy="691" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4000" pageHeight="3000" math="0" shadow="0">
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="group-user" value="1️⃣ Gestion des Utilisateurs" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="group-user" value="&lt;span style=&quot;background-color: rgb(204, 0, 0);&quot;&gt;&lt;font color=&quot;#000000&quot;&gt;1️⃣ Gestion des Utilisateurs&lt;/font&gt;&lt;/span&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="40" y="40" width="1800" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="user" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;User&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="369" y="90" width="220" height="250" as="geometry"/>
                 </mxCell>
-                <mxCell id="user-attrs" value="- id: String&#xa;- name: String&#xa;- email: String&#xa;- password: String&#xa;- phone: String&#xa;- photo: String&#xa;- city: String&#xa;- address: String&#xa;- description: String&#xa;- status: Enum [active|suspended]&#xa;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="user" vertex="1">
+                <mxCell id="user-attrs" value="- id: String&#10;- name: String&#10;- email: String&#10;- passwordHash: String&#10;- role: Enum [CLIENT|PATISSIERE|LIVREUR]&#10;- phone: String?&#10;- photo: String?&#10;- coverPhoto: String?&#10;- city: String?&#10;- address: String?&#10;- country: String?&#10;- latitude: Number?&#10;- longitude: Number?&#10;- description: String?&#10;- status: Enum [ACTIVE|SUSPENDED]&#10;- refreshToken: String?&#10;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="user" vertex="1">
                     <mxGeometry y="30" width="220" height="220" as="geometry"/>
-                </mxCell>
-                <mxCell id="permissions" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Permissions&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#6c8ebf;" parent="1" vertex="1">
-                    <mxGeometry x="1229" y="390" width="200" height="150" as="geometry"/>
-                </mxCell>
-                <mxCell id="permissions-attrs" value="- id: String&#xa;- name: String&#xa;- description: String" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="permissions" vertex="1">
-                    <mxGeometry y="30" width="200" height="120" as="geometry"/>
-                </mxCell>
-                <mxCell id="rolepermissions" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;UserPermissions&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#6c8ebf;" parent="1" vertex="1">
-                    <mxGeometry x="1229" y="180" width="200" height="110" as="geometry"/>
-                </mxCell>
-                <mxCell id="rolepermissions-attrs" value="- permissionId: String" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="rolepermissions" vertex="1">
-                    <mxGeometry y="30" width="200" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="client" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Client&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="632" y="432" width="220" height="140" as="geometry"/>
                 </mxCell>
-                <mxCell id="client-attrs" value="- walletBalance: Decimal&#xa;- ordersIds: String[]&#xa;- ratingAverage: Number" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="client" vertex="1">
+                <mxCell id="client-attrs" value="- walletBalance: Decimal&#10;- ordersIds: String[]&#10;- ratingAverage: Number" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="client" vertex="1">
                     <mxGeometry y="30" width="220" height="110" as="geometry"/>
                 </mxCell>
                 <mxCell id="patissiere" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Patissiere&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="330" y="430" width="220" height="190" as="geometry"/>
                 </mxCell>
-                <mxCell id="patissiere-attrs" value="- bio: String&#xa;- followersCount: Number&#xa;- ratingAverage: Number&#xa;- completedOrdersCount: Number&#xa;- products: String[]&#xa;- earnings: Decimal" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="patissiere" vertex="1">
+                <mxCell id="patissiere-attrs" value="- bio: String&#10;- followersCount: Number&#10;- ratingAverage: Number&#10;- completedOrdersCount: Number&#10;- products: String[]&#10;- earnings: Decimal" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="patissiere" vertex="1">
                     <mxGeometry y="30" width="220" height="160" as="geometry"/>
                 </mxCell>
                 <mxCell id="livreur" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Livreur&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="909" y="431" width="220" height="150" as="geometry"/>
                 </mxCell>
-                <mxCell id="livreur-attrs" value="- vehicleType: String&#xa;- ratingAverage: Number&#xa;- deliveriesCompleted: Number&#xa;- earnings: Decimal" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="livreur" vertex="1">
+                <mxCell id="livreur-attrs" value="- vehicleType: String&#10;- ratingAverage: Number&#10;- deliveriesCompleted: Number&#10;- earnings: Decimal" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="livreur" vertex="1">
                     <mxGeometry y="30" width="220" height="120" as="geometry"/>
                 </mxCell>
-                <mxCell id="admin" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Admin&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#6c8ebf;" parent="1" vertex="1">
-                    <mxGeometry x="909" y="119" width="200" height="90" as="geometry"/>
-                </mxCell>
-                <mxCell id="admin-attrs" value="- permissions: String[]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="admin" vertex="1">
-                    <mxGeometry y="30" width="200" height="60" as="geometry"/>
-                </mxCell>
-                <mxCell id="superadmin" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;SuperAdmin&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#6c8ebf;" parent="1" vertex="1">
-                    <mxGeometry x="911" y="258" width="200" height="80" as="geometry"/>
-                </mxCell>
-                <mxCell id="superadmin-attrs" value="- fullAccess: Boolean" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="superadmin" vertex="1">
-                    <mxGeometry y="30" width="200" height="50" as="geometry"/>
-                </mxCell>
-                <mxCell id="group-product" value="2️⃣ Gestion des Gâteaux (Produits)" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="group-product" value="&lt;span style=&quot;background-color: rgb(255, 0, 0);&quot;&gt;&lt;font color=&quot;#000000&quot;&gt;2️⃣ Gestion des Gâteaux (Produits)&lt;/font&gt;&lt;/span&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="40" y="650" width="800" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="product" value="" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
@@ -64,16 +40,16 @@
                 <mxCell id="product-name" value="Product" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="product" vertex="1">
                     <mxGeometry width="240" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="product-attrs" value="- id: String&#xa;- title: String&#xa;- description: String&#xa;- price: Decimal&#xa;- images: String[]&#xa;- personalizationOptions: Object&#xa;- patissiereId: String&#xa;- rating: Number&#xa;- isActive: Boolean&#xa;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="product" vertex="1">
+                <mxCell id="product-attrs" value="- id: String&#10;- title: String&#10;- description: String&#10;- price: Decimal&#10;- images: String[]&#10;- personalizationOptions: Object&#10;- patissiereId: String&#10;- rating: Number&#10;- isActive: Boolean&#10;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="product" vertex="1">
                     <mxGeometry y="30" width="240" height="250" as="geometry"/>
                 </mxCell>
                 <mxCell id="category" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Category&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="540" y="720" width="200" height="130" as="geometry"/>
                 </mxCell>
-                <mxCell id="category-attrs" value="- id: String&#xa;- name: String&#xa;- description: String" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="category" vertex="1">
+                <mxCell id="category-attrs" value="- id: String&#10;- name: String&#10;- description: String" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="category" vertex="1">
                     <mxGeometry y="30" width="200" height="100" as="geometry"/>
                 </mxCell>
-                <mxCell id="group-order" value="3️⃣ Commandes &amp; Processus" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="group-order" value="&lt;span style=&quot;background-color: rgb(255, 0, 0);&quot;&gt;&lt;font color=&quot;#000000&quot;&gt;3️⃣ Commandes &amp;amp; Processus&lt;/font&gt;&lt;/span&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="40" y="1000" width="800" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="order" value="" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
@@ -82,16 +58,16 @@
                 <mxCell id="order-name" value="Order" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="order" vertex="1">
                     <mxGeometry width="260" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="order-attrs" value="- id: String&#xa;- clientId: String&#xa;- patissiereId: String&#xa;- productId: String&#xa;- status: Enum [pending|accepted|refused|preparing|delivering|delivered]&#xa;- customizationDetails: Object&#xa;- totalPrice: Decimal&#xa;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="order" vertex="1">
+                <mxCell id="order-attrs" value="- id: String&#10;- clientId: String&#10;- patissiereId: String&#10;- productId: String&#10;- status: Enum [pending|accepted|refused|preparing|delivering|delivered]&#10;- customizationDetails: Object&#10;- totalPrice: Decimal&#10;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="order" vertex="1">
                     <mxGeometry y="30" width="260" height="290" as="geometry"/>
                 </mxCell>
                 <mxCell id="orderstatushistory" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;OrderStatusHistory&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="580" y="1050" width="220" height="150" as="geometry"/>
                 </mxCell>
-                <mxCell id="orderstatushistory-attrs" value="- id: String&#xa;- orderId: String&#xa;- status: Enum&#xa;- changedAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="orderstatushistory" vertex="1">
+                <mxCell id="orderstatushistory-attrs" value="- id: String&#10;- orderId: String&#10;- status: Enum&#10;- changedAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="orderstatushistory" vertex="1">
                     <mxGeometry y="30" width="220" height="120" as="geometry"/>
                 </mxCell>
-                <mxCell id="group-delivery" value="4️⃣ Livraison (Type InDrive)" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="group-delivery" value="4️⃣ Livraison (Type InDrive) Bonuse" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="900" y="650" width="800" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="delivery" value="" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
@@ -100,13 +76,13 @@
                 <mxCell id="delivery-name" value="Delivery" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="delivery" vertex="1">
                     <mxGeometry width="240" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="delivery-attrs" value="- id: String&#xa;- orderId: String&#xa;- livreurId: String&#xa;- startLocation: String&#xa;- destination: String&#xa;- distance: Number&#xa;- status: Enum [pending|in_progress|delivered]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="delivery" vertex="1">
+                <mxCell id="delivery-attrs" value="- id: String&#10;- orderId: String&#10;- livreurId: String&#10;- startLocation: String&#10;- destination: String&#10;- distance: Number&#10;- status: Enum [pending|in_progress|delivered]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="delivery" vertex="1">
                     <mxGeometry y="30" width="240" height="170" as="geometry"/>
                 </mxCell>
                 <mxCell id="deliveryproposal" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;DeliveryProposal&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="1344" y="700" width="240" height="170" as="geometry"/>
                 </mxCell>
-                <mxCell id="deliveryproposal-attrs" value="- id: String&#xa;- deliveryId: String&#xa;- livreurId: String&#xa;- proposedPrice: Decimal&#xa;- status: Enum [pending|accepted|refused]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="deliveryproposal" vertex="1">
+                <mxCell id="deliveryproposal-attrs" value="- id: String&#10;- deliveryId: String&#10;- livreurId: String&#10;- proposedPrice: Decimal&#10;- status: Enum [pending|accepted|refused]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="deliveryproposal" vertex="1">
                     <mxGeometry y="30" width="240" height="140" as="geometry"/>
                 </mxCell>
                 <mxCell id="group-payment" value="5️⃣ Paiement &amp; Argent (Escrow)" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
@@ -118,13 +94,13 @@
                 <mxCell id="payment-name" value="Payment" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="payment" vertex="1">
                     <mxGeometry width="220" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="payment-attrs" value="- id: String&#xa;- orderId: String&#xa;- clientId: String&#xa;- amount: Decimal&#xa;- paymentMethod: Enum [card|wallet]&#xa;- status: Enum [blocked|released|refunded]&#xa;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="payment" vertex="1">
+                <mxCell id="payment-attrs" value="- id: String&#10;- orderId: String&#10;- clientId: String&#10;- amount: Decimal&#10;- paymentMethod: Enum [card|wallet]&#10;- status: Enum [blocked|released|refunded]&#10;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="payment" vertex="1">
                     <mxGeometry y="30" width="220" height="160" as="geometry"/>
                 </mxCell>
                 <mxCell id="transaction" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Transaction&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="1340" y="1050" width="220" height="160" as="geometry"/>
                 </mxCell>
-                <mxCell id="transaction-attrs" value="- id: String&#xa;- userId: String&#xa;- type: Enum [earning|commission|withdrawal]&#xa;- amount: Decimal&#xa;- relatedOrderId: String&#xa;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="transaction" vertex="1">
+                <mxCell id="transaction-attrs" value="- id: String&#10;- userId: String&#10;- type: Enum [earning|commission]&#10;- amount: Decimal&#10;- relatedOrderId: String&#10;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="transaction" vertex="1">
                     <mxGeometry y="30" width="220" height="130" as="geometry"/>
                 </mxCell>
                 <mxCell id="commission" value="" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#6c8ebf;" parent="1" vertex="1">
@@ -133,16 +109,10 @@
                 <mxCell id="commission-name" value="Commission" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="commission" vertex="1">
                     <mxGeometry width="200" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="commission-attrs" value="- id: String&#xa;- type: Enum [order|delivery]&#xa;- percentage: Number" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="commission" vertex="1">
+                <mxCell id="commission-attrs" value="- id: String&#10;- type: Enum [order|delivery]&#10;- percentage: Number" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="commission" vertex="1">
                     <mxGeometry y="30" width="200" height="80" as="geometry"/>
                 </mxCell>
-                <mxCell id="withdrawal" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Withdrawal&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
-                    <mxGeometry x="1340" y="1260" width="200" height="150" as="geometry"/>
-                </mxCell>
-                <mxCell id="withdrawal-attrs" value="- id: String&#xa;- userId: String&#xa;- amount: Decimal&#xa;- status: Enum [pending|approved|rejected]&#xa;- requestedAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="withdrawal" vertex="1">
-                    <mxGeometry y="30" width="200" height="120" as="geometry"/>
-                </mxCell>
-                <mxCell id="group-rating" value="6️⃣ Notation &amp;amp; Réputation (Bonuse)" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
+                <mxCell id="group-rating" value="&lt;span style=&quot;background-color: rgb(240, 25, 10);&quot;&gt;&lt;font color=&quot;#000000&quot;&gt;6️⃣ Notation &amp;amp; Réputation&lt;/font&gt;&lt;/span&gt;" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
                     <mxGeometry x="40" y="1400" width="800" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="rating" value="" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
@@ -151,7 +121,7 @@
                 <mxCell id="rating-name" value="Rating" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="rating" vertex="1">
                     <mxGeometry width="220" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="rating-attrs" value="- id: String&#xa;- fromUserId: String&#xa;- toUserId: String&#xa;- orderId: String?&#xa;- productId: String?&#xa;- stars: Number&#xa;- comment: String?&#xa;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="rating" vertex="1">
+                <mxCell id="rating-attrs" value="- id: String&#10;- fromUserId: String&#10;- toUserId: String&#10;- orderId: String?&#10;- productId: String?&#10;- stars: Number&#10;- comment: String?&#10;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="rating" vertex="1">
                     <mxGeometry y="30" width="220" height="180" as="geometry"/>
                 </mxCell>
                 <mxCell id="like" value="" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#6c8ebf;" parent="1" vertex="1">
@@ -160,7 +130,7 @@
                 <mxCell id="like-name" value="Like" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="like" vertex="1">
                     <mxGeometry width="180" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="like-attrs" value="- id: String&#xa;- userId: String&#xa;- productId: String&#xa;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="like" vertex="1">
+                <mxCell id="like-attrs" value="- id: String&#10;- userId: String&#10;- productId: String&#10;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="like" vertex="1">
                     <mxGeometry y="30" width="180" height="100" as="geometry"/>
                 </mxCell>
                 <mxCell id="follower" value="" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#6c8ebf;" parent="1" vertex="1">
@@ -169,7 +139,7 @@
                 <mxCell id="follower-name" value="Follower" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="follower" vertex="1">
                     <mxGeometry width="200" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="follower-attrs" value="- id: String&#xa;- clientId: String&#xa;- patissiereId: String" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="follower" vertex="1">
+                <mxCell id="follower-attrs" value="- id: String&#10;- clientId: String&#10;- patissiereId: String" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="follower" vertex="1">
                     <mxGeometry y="30" width="200" height="80" as="geometry"/>
                 </mxCell>
                 <mxCell id="group-comm" value="7️⃣ Communication &amp;amp; Notifications (Bonuse)" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
@@ -178,19 +148,19 @@
                 <mxCell id="chat" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Chat&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="979" y="1580" width="200" height="100" as="geometry"/>
                 </mxCell>
-                <mxCell id="chat-attrs" value="- id: String&#xa;- participants: String[]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="chat" vertex="1">
+                <mxCell id="chat-attrs" value="- id: String&#10;- participants: String[]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="chat" vertex="1">
                     <mxGeometry y="30" width="200" height="70" as="geometry"/>
                 </mxCell>
                 <mxCell id="message" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Message&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="1380" y="1580" width="220" height="150" as="geometry"/>
                 </mxCell>
-                <mxCell id="message-attrs" value="- id: String&#xa;- chatId: String&#xa;- senderId: String&#xa;- content: String&#xa;- sentAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="message" vertex="1">
+                <mxCell id="message-attrs" value="- id: String&#10;- chatId: String&#10;- senderId: String&#10;- content: String&#10;- sentAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="message" vertex="1">
                     <mxGeometry y="30" width="220" height="120" as="geometry"/>
                 </mxCell>
                 <mxCell id="notification" value="&lt;span style=&quot;font-size: 14px; text-wrap-mode: nowrap;&quot;&gt;Notification&lt;/span&gt;" style="swimlane;fontStyle=1;align=center;verticalAlign=top;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
                     <mxGeometry x="979" y="1760" width="240" height="190" as="geometry"/>
                 </mxCell>
-                <mxCell id="notification-attrs" value="- id: String&#xa;- userId: String&#xa;- title: String&#xa;- message: String&#xa;- type: String&#xa;- isRead: Boolean&#xa;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="notification" vertex="1">
+                <mxCell id="notification-attrs" value="- id: String&#10;- userId: String&#10;- title: String&#10;- message: String&#10;- type: String&#10;- isRead: Boolean&#10;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="notification" vertex="1">
                     <mxGeometry y="30" width="240" height="160" as="geometry"/>
                 </mxCell>
                 <mxCell id="group-dispute" value="8️⃣ Litiges &amp;amp; Réclamations (Bonuse)" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
@@ -202,7 +172,7 @@
                 <mxCell id="dispute-name" value="Dispute" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="dispute" vertex="1">
                     <mxGeometry width="240" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="dispute-attrs" value="- id: String&#xa;- orderId: String&#xa;- openedBy: String&#xa;- reason: String&#xa;- status: Enum [open|resolved]&#xa;- adminDecision: String&#xa;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="dispute" vertex="1">
+                <mxCell id="dispute-attrs" value="- id: String&#10;- orderId: String&#10;- openedBy: String&#10;- reason: String&#10;- status: Enum [open|resolved]&#10;- adminDecision: String&#10;- createdAt: DateTime" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="dispute" vertex="1">
                     <mxGeometry y="30" width="240" height="160" as="geometry"/>
                 </mxCell>
                 <mxCell id="group-stats" value="9️⃣ Dashboard &amp;amp; Analytics (Bonuse)" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#666666;fontSize=14;align=center;verticalAlign=middle;" parent="1" vertex="1">
@@ -214,7 +184,7 @@
                 <mxCell id="statistics-name" value="Statistics" style="text;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=14;fontStyle=1;" parent="statistics" vertex="1">
                     <mxGeometry width="280" height="30" as="geometry"/>
                 </mxCell>
-                <mxCell id="statistics-attrs" value="- totalUsers: Number&#xa;- totalClients: Number&#xa;- totalPatissieres: Number&#xa;- totalLivreurs: Number&#xa;- totalOrders: Number&#xa;- totalRevenue: Decimal&#xa;- satisfactionRate: Number&#xa;- topPatissieres: String[]&#xa;- topLivreurs: String[]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="statistics" vertex="1">
+                <mxCell id="statistics-attrs" value="- totalUsers: Number&#10;- totalClients: Number&#10;- totalPatissieres: Number&#10;- totalLivreurs: Number&#10;- totalOrders: Number&#10;- totalRevenue: Decimal&#10;- satisfactionRate: Number&#10;- topPatissieres: String[]&#10;- topLivreurs: String[]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=top;spacingLeft=4;spacingRight=4;overflow=hidden;rotatable=0;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;fontSize=12;whiteSpace=wrap;" parent="statistics" vertex="1">
                     <mxGeometry y="30" width="280" height="240" as="geometry"/>
                 </mxCell>
                 <mxCell id="TZGouK4va0myGn7loMK--5" value="" style="endArrow=none;html=1;rounded=0;exitX=0.457;exitY=1.003;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;endFill=0;" parent="1" source="user-attrs" target="livreur" edge="1">
@@ -237,29 +207,11 @@
                         <mxPoint x="749" y="430" as="targetPoint"/>
                     </mxGeometry>
                 </mxCell>
-                <mxCell id="TZGouK4va0myGn7loMK--8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="superadmin-attrs" target="user-attrs" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="TZGouK4va0myGn7loMK--9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;endArrow=block;endFill=0;" parent="1" source="admin-attrs" target="user-attrs" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
                 <mxCell id="TZGouK4va0myGn7loMK--10" value="" style="endArrow=classic;html=1;rounded=0;" parent="1" edge="1">
                     <mxGeometry width="50" height="50" relative="1" as="geometry">
                         <mxPoint x="469" y="430" as="sourcePoint"/>
                         <mxPoint x="469" y="340" as="targetPoint"/>
                     </mxGeometry>
-                </mxCell>
-                <mxCell id="TZGouK4va0myGn7loMK--11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.043;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="rolepermissions-attrs" target="user" edge="1">
-                    <mxGeometry relative="1" as="geometry">
-                        <Array as="points">
-                            <mxPoint x="1159" y="250"/>
-                            <mxPoint x="1159" y="100"/>
-                        </Array>
-                        <mxPoint x="609" y="100" as="targetPoint"/>
-                    </mxGeometry>
-                </mxCell>
-                <mxCell id="TZGouK4va0myGn7loMK--12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="rolepermissions-attrs" target="permissions-attrs" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
                 <mxCell id="TZGouK4va0myGn7loMK--14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.607;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="delivery-attrs" target="deliveryproposal-attrs" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
@@ -286,12 +238,6 @@
                 </mxCell>
                 <mxCell id="TZGouK4va0myGn7loMK--21" value="1**N" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
                     <mxGeometry x="1110" y="1300" width="60" height="30" as="geometry"/>
-                </mxCell>
-                <mxCell id="TZGouK4va0myGn7loMK--22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="transaction-attrs" target="withdrawal-attrs" edge="1">
-                    <mxGeometry relative="1" as="geometry"/>
-                </mxCell>
-                <mxCell id="TZGouK4va0myGn7loMK--23" value="1**1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" parent="1" vertex="1">
-                    <mxGeometry x="1260" y="1320" width="60" height="30" as="geometry"/>
                 </mxCell>
                 <mxCell id="TZGouK4va0myGn7loMK--24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.001;entryY=0.273;entryDx=0;entryDy=0;entryPerimeter=0;" parent="1" source="payment-attrs" target="commission-attrs" edge="1">
                     <mxGeometry relative="1" as="geometry"/>

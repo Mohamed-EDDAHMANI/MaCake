@@ -1,0 +1,203 @@
+Cahier des charges – Projet MaCack
+1. Présentation générale
+Nom du projet : MaCack
+Type : Plateforme web & mobile (Marketplace) avec microservices
+Objectif : Mettre en relation les femmes/pâtissières qui préparent des gâteaux à domicile avec les clients souhaitant acheter des gâteaux personnalisés, ainsi que des livreurs indépendants pour assurer la livraison.
+MaCack joue le rôle d’un intermédiaire sécurisé entre :
+Les pâtissières (production)
+Les clients (commande & personnalisation)
+Les livreurs (livraison type InDrive)
+Le tout repose sur une architecture microservices (auth, commandes, paiement, notation, catalogue, etc.) avec une application mobile front basée sur Expo / React Native.
+
+2. Types d’utilisateurs
+2.1 Client
+Personne qui souhaite commander un gâteau.
+2.2 Pâtissière
+Femme ou professionnel qui prépare des gâteaux à domicile.
+2.3 Livreur
+Personne chargée de livrer les commandes.
+
+3. Fonctionnalités communes (tous les utilisateurs)
+Inscription / Connexion (via Auth Service NestJS + JWT)
+Gestion du profil :
+Nom
+Photo de profil (stockée sur S3 via Auth S3Service)
+Téléphone
+Ville / Adresse (avec géolocalisation Expo Location et coordonnées carte)
+Description
+Notifications en temps réel (WebSocket / Socket.io)
+Historique des actions (commandes, livraisons, etc.)
+Système de notation (étoiles ⭐) géré par le Notation Service
+
+4. Fonctionnalités Client
+4.1 Consultation
+Voir les publications (gâteaux disponibles)
+Voir les pâtissières inscrites
+Recherche par :
+Ville
+Prix
+Note
+Type de gâteau
+4.2 Commande
+Passer une commande personnalisée :
+Choix du gâteau
+Couleurs
+Garniture
+Message personnalisé
+Date & heure
+Contacter directement une pâtissière (chat)
+4.3 Suivi
+Suivi du statut de la commande :
+En attente
+Acceptée
+Refusée
+En préparation
+En livraison
+Livrée
+4.4 Livraison
+Voir les propositions des livreurs
+Accepter ou refuser un prix de livraison
+4.5 Évaluation
+Noter la pâtissière
+Noter le livreur
+
+5. Fonctionnalités Pâtissière
+5.1 Gestion des produits
+Publier un gâteau :
+Images
+Prix
+Description
+Options de personnalisation
+Modifier / supprimer un produit
+5.2 Gestion des commandes
+Voir les commandes reçues
+Accepter ou refuser une commande
+Changer le statut de la commande
+5.3 Notifications
+Notification à chaque nouvelle commande
+Notification lors d’un message client
+5.4 Réputation
+Système de followers
+Note moyenne (⭐)
+Compteur de commandes réussies
+
+6. Fonctionnalités Livreur
+6.1 Commandes disponibles
+Voir les commandes prêtes à être livrées (via Order Service)
+Voir :
+Point de départ (position client / pâtissière via Expo Location + Google Maps / react-native-maps)
+Destination
+Distance (calculée côté front via API de carte ou côté backend)
+Visualisation sur une carte interactive (react-native-maps)
+6.2 Système de proposition (type InDrive)
+Proposer un prix de livraison
+Accepter le prix proposé par le client
+Négociation possible jusqu’à validation finale (via WebSocket / Socket.io)
+6.3 Livraison
+Changer le statut :
+En cours
+Livrée
+Les changements de statut sont synchronisés en temps réel avec le client et la pâtissière.
+6.4 Évaluation
+Être noté par le client (Notation Service)
+
+7. Paiement sur la plateforme (tous les rôles)
+7.1 Principe général
+Le paiement se fait directement sur MaCack via le Payment Service (NestJS + Stripe) afin de garantir la sécurité entre les trois parties (client, pâtissière, livreur).
+La plateforme agit comme tiers de confiance (escrow).
+
+7.2 Paiement côté Client
+Le client paie en ligne lors de la validation de la commande :
+Prix du gâteau
+Frais de livraison
+Moyens de paiement :
+Carte bancaire (Stripe)
+Wallet interne (future version via Payment Service)
+Le montant est bloqué jusqu’à la livraison (escrow géré par le Payment Service).
+
+7.3 Paiement côté Pâtissière
+La pâtissière reçoit son paiement uniquement après :
+Acceptation de la commande
+Livraison confirmée par le client (statut mis à jour par Order Service)
+Le montant reçu = prix du gâteau – commission MaCack
+Accès à :
+Historique des gains (Payment Service)
+Solde disponible
+Demande de retrait
+
+7.4 Paiement côté Livreur
+Le livreur est payé après la livraison confirmée (Order + Payment Services)
+Le prix est celui validé avec le client (type InDrive)
+Accès à :
+Historique des livraisons
+Gains par course
+Solde disponible
+
+7.5 Commission MaCack
+La plateforme prélève automatiquement une commission sur :
+Chaque commande de gâteau
+Chaque livraison
+Taux de commission configurable au niveau de la plateforme (configuration interne, future interface back-office)
+
+7.6 Gestion des litiges
+En cas de problème :
+Le paiement reste bloqué
+Un système de réclamation est ouvert
+La plateforme (équipe support) tranche le litige (fonctionnalité à implémenter côté back-office)
+
+8. Système de notifications
+Nouvelle commande (Order Service)
+Acceptation / refus de commande (Order Service)
+Nouvelle proposition de livraison (Order + Notation / temps réel)
+Validation de prix
+Livraison terminée
+Notifications via :
+Application (Expo / React Native avec WebSocket / Socket.io)
+Email (optionnel)
+
+8. Sécurité
+Authentification sécurisée (JWT)
+Protection des données personnelles
+Rôles et permissions
+Validation des actions critiques
+
+9. Technologies réellement utilisées
+Frontend mobile & web :
+- Expo / React Native (expo-router, react-navigation, Redux Toolkit, redux-persist, nativewind)
+- Gestion de la localisation : expo-location
+- Carte interactive : react-native-maps
+- Communication temps réel : socket.io-client
+
+Backend (microservices NestJS) :
+- Auth Service (NestJS 11, JWT, MongoDB/Mongoose, Redis, S3 AWS)
+- Order Service (NestJS, MongoDB/Mongoose, Redis)
+- Payment Service (NestJS, MongoDB/Mongoose, Stripe)
+- Notation Service (NestJS, MongoDB/Mongoose, Redis)
+- (Éventuel Catalog Service pour les produits / catégories)
+
+Base de données :
+- MongoDB (via Mongoose et/ou Prisma selon les services)
+
+Messaging & cache :
+- Redis (ioredis) pour cache, sessions et registry de services
+- RabbitMQ (amqp-connection-manager, amqplib) pour la communication entre microservices
+
+Stockage fichiers :
+- AWS S3 pour les images de profils et médias
+
+Notifications & temps réel :
+- WebSocket / Socket.io entre front (Expo) et backend (services NestJS)
+
+Paiement :
+- Stripe (intégré dans Payment Service, future extension vers wallet interne)
+
+10. Évolutions futures
+Amélioration du wallet interne (recharges, cashbacks)
+Abonnements premium pour pâtissières
+Promotions & codes de réduction
+Statistiques avancées (performances livraisons, zones géographiques les plus actives)
+Version mobile complète publiée sur stores
+Intégration d’autres moyens de paiement locaux
+
+11. Conclusion
+Le projet MaCack vise à digitaliser la vente de gâteaux faits maison, offrir des opportunités économiques aux pâtissières et livreurs, et fournir une expérience simple, personnalisée et sécurisée aux clients.

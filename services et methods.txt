@@ -1,227 +1,117 @@
-1️⃣ Services Utilisateur
-== UserService
+1️⃣ Auth Service
+== UsersService
+- register(dto: CreateUserDto)
+- login(dto: LoginDto)
+- logout(userId: string, res: any)
+- refresh(refreshToken: string)
+- findByEmail(email: string)
+- findByIds(ids: string[])
+- uploadProfilePic(userId: string, fileBase64: string, mimeType?: string, filename?: string)
+- getProfile(userId: string)
+- updateProfile(userId: string, dto: {...})
+- topUpWallet(userId: string, amount: number)
+- getPlatformAccount()
+- debitWallet(userId: string, amount: number)
 
-register(userData) → inscrire un utilisateur
+== TokenService
+- generateAccessToken(payload: any)
+- generateRefreshToken(payload: any)
 
-login(credentials) → authentifier + JWT
+== Auth RedisService
+- onModuleInit()
+- onModuleDestroy()
+- registerServiceInfo(serviceName: string, host: string, port: number, routeKey: string)
+- getClient()
 
-getProfile(userId) → récupérer profile
+== S3Service (auth)
+- onModuleInit()
+- uploadProfilePic(userId: string, buffer: Buffer, mimeType: string, filename?: string)
+- deleteObject(key: string)
+- deleteByStoredPath(storedPath: string | null | undefined)
 
-updateProfile(userId, data) → modifier profile
 
-deactivateUser(userId) → désactiver compte
-
-getAllUsers(filters) → pour Admin
-
-== ClientService
-
-getOrders(clientId) → lister commandes
-
-createOrder(orderData) → créer commande
-
-trackOrder(orderId) → suivre commande
-
-rateUser(toUserId, ratingData) → noter pâtissière ou livreur
-
-== PatissiereService
-
-getProducts(patissiereId) → lister gâteaux
-
-createProduct(productData) → publier gâteau
-
-updateProduct(productId, data) → modifier gâteau
-
-deleteProduct(productId) → supprimer gâteau
-
-getOrders(patissiereId) → voir commandes reçues
-
-updateOrderStatus(orderId, status) → changer statut
-
-getStats(patissiereId) → statistiques individuelles
-
-== LivreurService
-
-getAvailableDeliveries() → commandes à livrer
-
-proposeDelivery(deliveryId, price) → proposer prix
-
-acceptDelivery(deliveryProposalId) → accepter livraison
-
-updateDeliveryStatus(deliveryId, status) → changer statut
-
-getEarnings(livreurId) → historique gains
-
-== AdminService / SuperAdminService
-
-getAllUsers(filters)
-
-suspendUser(userId)
-
-getAllOrders(filters)
-
-resolveDispute(disputeId, decision)
-
-configureCommission(type, percentage)
-
-getPlatformStats()
-
-2️⃣ Services Produit
-== ProductService
-
-createProduct(productData)
-
-updateProduct(productId, data)
-
-deleteProduct(productId)
-
-getProducts(filters) → filtrer par ville, prix, type, note
-
-getProductById(productId)
-
-== CategoryService
-
-createCategory(data)
-
-updateCategory(categoryId, data)
-
-deleteCategory(categoryId)
-
-getAllCategories()
-
-3️⃣ Services Commandes
+2️⃣ Order Service
 == OrderService
+- create(createOrderDto: CreateOrderDto)
+- findAll(userId: string, role: string)
+- findPatissiereOrders(userId: string)
+- acceptOrder(orderId: string, userId: string)
+- completeOrder(orderId: string, userId: string)
+- findOne(orderId: string, userId: string, role: string)
+- markPaymentCompleted(orderId: string, clientId: string)
+- markDeliveredByClient(orderId: string, clientId: string)
+- getOrderByIdForInternal(orderId: string)
+- getOrderWithItemsById(orderId: string)
+- markDeliveredByDelivery(orderId: string)
+- startDelivery(orderId: string, clientId: string)
+- remove(orderId: string)
 
-createOrder(clientId, productId, options)
+== EstimationService
+- clientCreateEstimation(dto: CreateEstimationDto)
+- deliveryCreateEstimation(dto: CreateEstimationDto, userId?: string)
+- confirmEstimation(estimationId: string, userId: string)
+- markEstimationPaid(estimationId: string)
+- findAcceptedDeliveryEstimations(userId: string)
+- findEstimatedDeliveryEstimations(userId: string)
+- findDeliveredDeliveryEstimations(userId: string)
+- findEstimationById(estimationId: string)
+- findByOrderId(orderId: string)
+- acceptDeliveryOffer(deliveryEstimationId: string, clientUserId: string)
+- findPendingClientEstimations()
 
-getOrderById(orderId)
+== OrderItemService
+- create(createOrderItemDto: CreateOrderItemDto)
+- findAll()
+- findOne(id: string)
+- update(id: string, updateOrderItemDto: UpdateOrderItemDto)
+- remove(id: string)
 
-getOrdersByUser(userId, role)
+== Orders RedisService
+- onModuleInit()
+- onModuleDestroy()
+- registerServiceInfo(serviceName: string, host: string, port: number, routeKey: string)
+- getClient()
 
-updateOrderStatus(orderId, status)
 
-== OrderStatusHistoryService
+3️⃣ Payment Service
+== RedisService (payment)
+- onModuleInit()
+- onModuleDestroy()
+- registerServiceInfo(serviceName: string, host: string, port: number, routeKey: string)
+- getClient()
 
-addStatusHistory(orderId, status)
 
-getOrderHistory(orderId)
-
-4️⃣ Services Livraison
-== DeliveryService
-
-getAvailableDeliveries()
-
-assignDelivery(orderId, livreurId)
-
-updateDeliveryStatus(deliveryId, status)
-
-DeliveryProposalService
-
-createProposal(deliveryId, livreurId, price)
-
-acceptProposal(proposalId)
-
-rejectProposal(proposalId)
-
-getProposalsByDelivery(deliveryId)
-
-5️⃣ Services Paiement & Argent
-== PaymentService
-
-createPayment(orderId, amount, method)
-
-releasePayment(orderId)
-
-refundPayment(orderId)
-
-== TransactionService
-
-recordTransaction(userId, type, amount, orderId)
-
-getTransactions(userId)
-
-== CommissionService
-
-setCommission(type, percentage)
-
-calculateCommission(amount, type)
-
-== WithdrawalService
-
-requestWithdrawal(userId, amount)
-
-approveWithdrawal(withdrawalId)
-
-rejectWithdrawal(withdrawalId)
-
-6️⃣ Services Notation & Réputation
+4️⃣ Notation Service
 == RatingService
-
-addRating(fromUserId, toUserId, orderId, stars, comment)
-
-getRatings(userId)
-
-getAverageRating(userId)
+- onModuleInit()
+- create(dto: CreateRatingDto)
+- findByUser(userId: string)
+- findByProduct(productId: string)
+- getAverage(userId: string)
+- getAverageForUsers(userIds: string[])
+- delete(ratingId: string)
 
 == LikeService
-- addLike(userId, productId)           // l'utilisateur like un produit
-- removeLike(userId, productId)        // retirer le like
-- getLikesCount(productId)             // total des likes pour un produit
-- hasUserLiked(userId, productId)      // vérifier si un utilisateur a déjà liké
-
+- toggle(userId: string, productId: string)
+- getCount(productId: string)
+- getBatchCount(productIds: string[])
+- hasUserLiked(userId: string, productId: string)
+- findByUser(userId: string)
+- getBatchLikerIds(productIds: string[])
 
 == FollowerService
+- toggle(clientId: string, patissiereId: string)
+- getFollowers(patissiereId: string)
+- getCount(patissiereId: string)
+- isFollowing(clientId: string, patissiereId: string)
 
-followPatissiere(clientId, patissiereId)
+== ProfileLikeService
+- toggle(userId: string, patissiereId: string)
+- getCount(patissiereId: string)
+- hasLiked(userId: string, patissiereId: string)
 
-unfollowPatissiere(clientId, patissiereId)
-
-getFollowers(patissiereId)
-
-7️⃣ Services Communication & Notifications
-== ChatService
-
-createChat(participants)
-
-getChatById(chatId)
-
-getChatsByUser(userId)
-
-== MessageService
-
-sendMessage(chatId, senderId, content)
-
-getMessages(chatId)
-
-== NotificationService
-
-createNotification(userId, title, message, type)
-
-markAsRead(notificationId)
-
-getNotifications(userId)
-
-8️⃣ Service Litiges & Réclamations
-== DisputeService
-
-openDispute(orderId, openedBy, reason)
-
-getDisputeById(disputeId)
-
-resolveDispute(disputeId, decision)
-
-getAllDisputes(filters)
-
-9️⃣ Service Dashboard & Analytics
-== StatisticsService
-
-getUserStats() → nombre clients / pâtissières / livreurs actifs
-
-getOrderStats(period) → commandes par période
-
-getRevenueStats() → revenu total, commissions
-
-getTopPerformers(type) → top pâtissières ou livreurs
-
-getSatisfactionRate() → moyenne étoiles
-
-
+== Notation RedisService
+- onModuleInit()
+- onModuleDestroy()
+- registerServiceInfo(serviceName: string, host: string, port: number, routeKey: string)
+- getClient()

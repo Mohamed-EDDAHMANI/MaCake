@@ -16,25 +16,29 @@ import type { AuthApiResponse } from "@/store/features/auth/authSlice";
 const DEFAULT_PORT = process.env.PORT || 3000;
 
 function resolveBaseUrl(): string {
-  // 1) Expo dev server exposes the host machine's LAN IP automatically
+  // 1) Explicit env override (most reliable for real devices)
+  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
+  console.log(`[api] envUrl = ${envUrl}`);
+  if (envUrl) return envUrl;
+
+  // 2) Expo dev server exposes the host machine's LAN IP automatically
   //    e.g. "192.168.1.2:8081" — we extract just the IP part
   const debuggerHost =
-    Constants.expoConfig?.hostUri ?? (Constants as any).manifest?.debuggerHost;
+  Constants.expoConfig?.hostUri ?? (Constants as any).manifest?.debuggerHost;
   console.log(`[api] debuggerHost = ${debuggerHost}`);
   if (debuggerHost) {
     const ip = debuggerHost.split(":")[0]; // strip metro port
     return `http://${ip}:${DEFAULT_PORT}`;
   }
 
-  // 2) Fallback: explicit env override
-  const envUrl = process.env.EXPO_PUBLIC_API_URL?.trim();
-  if (envUrl) return envUrl;
-
   // 3) Platform-specific defaults (emulator / web)
-  const LAN_IP = "172.16.8.159"; // IP dyal PC dyalek
+  const LAN_IP = process.env.EXPO_PUBLIC_LAN_IP?.trim();
+  if (LAN_IP) {
+    return `http://${LAN_IP}:${DEFAULT_PORT}`;
+  }
 
   if (Platform.OS === "android") {
-    return `http://${LAN_IP}:${DEFAULT_PORT}`;
+    return `http://10.0.2.2:${DEFAULT_PORT}`;
   }
   return `http://localhost:${DEFAULT_PORT}`;
 }

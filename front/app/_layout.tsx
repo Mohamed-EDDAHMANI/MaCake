@@ -1,5 +1,6 @@
 import "../global.css";
 import { useEffect, useState } from "react";
+import { View, StyleSheet } from "react-native";
 import { ThemeProvider, DefaultTheme } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -34,38 +35,53 @@ export default function RootLayout() {
   const StripeProvider = stripeModule?.StripeProvider;
   const publishableKey = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "";
 
+  // Important: keep the root navigator mounted to avoid multiple linking/root
+  // instances in dev (fast refresh / splash toggling).
   const appTree = (
     <ThemeProvider value={DefaultTheme}>
       <AuthModalProvider>
-        {showBrandSplash ? (
-          <>
-            <AppSplashScreen />
-            <StatusBar style="dark" />
-          </>
-        ) : (
-          <>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(main)" />
-              <Stack.Screen name="(client)" />
-            </Stack>
-            <StatusBar style="dark" />
-          </>
-        )}
+        <View style={styles.root}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(main)" />
+            <Stack.Screen name="(client)" />
+          </Stack>
+
+          {showBrandSplash ? (
+            <View style={styles.splashOverlay} pointerEvents="auto">
+              <AppSplashScreen />
+              <StatusBar style="dark" />
+            </View>
+          ) : null}
+          {!showBrandSplash ? <StatusBar style="dark" /> : null}
+        </View>
       </AuthModalProvider>
     </ThemeProvider>
   );
 
+  const content = StripeProvider && publishableKey ? (
+    <StripeProvider publishableKey={publishableKey}>{appTree}</StripeProvider>
+  ) : (
+    appTree
+  );
+
   return (
     <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        {StripeProvider && publishableKey ? (
-          <StripeProvider publishableKey={publishableKey}>{appTree}</StripeProvider>
-        ) : (
-          appTree
-        )}
+      {/* Render a stable navigation tree while rehydrating to avoid router rehydration edge-cases */}
+      <PersistGate loading={content} persistor={persistor}>
+        {content}
       </PersistGate>
     </Provider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+  splashOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999,
+  },
+});

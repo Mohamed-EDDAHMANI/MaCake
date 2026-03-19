@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\(module|controller|service\\)\\\\.ts$\")",
+      "WebFetch(domain:github.com)",
+      "Bash(find /c/Users/Youcode/Desktop/MaCake -name .env* -o -name *.env*)",
+      "Bash(grep -r \"TODO\\\\|FIXME\\\\|XXX\\\\|HACK\\\\|BUG\" /c/Users/Youcode/Desktop/MaCake/gateway/src --include=*.ts)",
+      "Bash(grep -r console.log /c/Users/Youcode/Desktop/MaCake/gateway/src --include=*.ts)",
+      "Bash(grep -r 'as any' /c/Users/Youcode/Desktop/MaCake/gateway/src /c/Users/Youcode/Desktop/MaCake/auth-service/src --include=*.ts)",
+      "Bash(find /c/Users/Youcode/Desktop/MaCake -name test -o -name *.spec.ts -o -name *.test.ts)",
+      "Bash(grep -r \"hardcoded\\\\|API_KEY\\\\|SECRET\" /c/Users/Youcode/Desktop/MaCake/front/lib /c/Users/Youcode/Desktop/MaCake/front/constants --include=*.ts --include=*.tsx)",
+      "Bash(grep -r any /c/Users/Youcode/Desktop/MaCake/payment-service/src --include=*.ts)",
+      "Bash(xargs wc:*)",
+      "Bash(find /c/Users/Youcode/Desktop/MaCake -name Dockerfile -exec cat {})",
+      "Bash(2)",
+      "Bash(grep -r \"ValidationPipe\\\\|class-validator\\\\|ValidatedBody\" /c/Users/Youcode/Desktop/MaCake/auth-service/src /c/Users/Youcode/Desktop/MaCake/payment-service/src /c/Users/Youcode/Desktop/MaCake/order-service/src --include=*.ts)",
+      "Bash(grep -r \"JSON.stringify.*user\\\\|password\\\\|token\" /c/Users/Youcode/Desktop/MaCake/gateway/src /c/Users/Youcode/Desktop/MaCake/auth-service/src --include=*.ts)",
+      "Bash(grep -r \"\\\\.gitignore\\\\|env.example\" /c/Users/Youcode/Desktop/MaCake --include=.gitignore --include=*.example)",
+      "Bash(xargs cat:*)",
+      "Bash(grep -r process.env /c/Users/Youcode/Desktop/MaCake/payment-service/src /c/Users/Youcode/Desktop/MaCake/auth-service/src --include=*.ts)",
+      "Bash(grep -r \"as any\\\\|any as \" /c/Users/Youcode/Desktop/MaCake/payment-service/src /c/Users/Youcode/Desktop/MaCake/notation-service/src --include=*.ts)"
+    ]
+  }
+}
