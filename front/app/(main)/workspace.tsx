@@ -684,18 +684,25 @@ export default function WorkspaceScreen() {
     if (!entry) return [];
     const { order } = entry;
     const out: MapMarker[] = [];
-    if (order.deliveryLatitude != null && order.deliveryLongitude != null) {
+    // Prefer order's GPS coordinates; fall back to client's profile location
+    const clientProfile = profiles[order.clientId];
+    const deliveryLat = order.deliveryLatitude ?? clientProfile?.latitude ?? null;
+    const deliveryLng = order.deliveryLongitude ?? clientProfile?.longitude ?? null;
+    if (deliveryLat != null && deliveryLng != null) {
       out.push({
-        lat: order.deliveryLatitude,
-        lng: order.deliveryLongitude,
+        lat: deliveryLat,
+        lng: deliveryLng,
         label: "Delivery",
       });
     }
+    // Patissiere pickup: prefer coordinates stored in order, fall back to auth profile
     const pat = profiles[order.patissiereId];
-    if (pat?.latitude != null && pat?.longitude != null) {
+    const pickupLat = order.patissiereLatitude ?? pat?.latitude ?? null;
+    const pickupLng = order.patissiereLongitude ?? pat?.longitude ?? null;
+    if (pickupLat != null && pickupLng != null) {
       out.push({
-        lat: pat.latitude,
-        lng: pat.longitude,
+        lat: pickupLat,
+        lng: pickupLng,
         label: "Pickup",
       });
     }

@@ -39,6 +39,12 @@ export class Order {
   @Prop({ type: Number, default: null })
   deliveryLongitude: number | null;
 
+  @Prop({ type: Number, default: null })
+  patissiereLatitude: number | null;
+
+  @Prop({ type: Number, default: null })
+  patissiereLongitude: number | null;
+
   @Prop({ type: String, enum: Object.values(OrderStatus), default: OrderStatus.PENDING })
   status: OrderStatus;
 

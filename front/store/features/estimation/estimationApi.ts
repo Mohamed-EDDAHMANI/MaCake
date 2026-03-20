@@ -65,6 +65,8 @@ export interface OrderForDelivery {
   deliveryAddressSource: string;
   deliveryLatitude: number | null;
   deliveryLongitude: number | null;
+  patissiereLatitude: number | null;
+  patissiereLongitude: number | null;
   requestedDateTime: string;
   totalPrice: number;
   status: string;

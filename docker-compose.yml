@@ -250,6 +250,7 @@ services:
     command: npm run start:dev
     volumes:
       - ./order-service:/app
+      - /app/node_modules
     environment:
       MONGODB_URI: mongodb://root:password@mongodb:27017/orders_db?authSource=admin
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672?heartbeat=30

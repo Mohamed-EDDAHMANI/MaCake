@@ -27,6 +27,14 @@ export class CreateOrderDto {
 	@IsNumber()
 	deliveryLongitude?: number;
 
+	@IsOptional()
+	@IsNumber()
+	patissiereLatitude?: number;
+
+	@IsOptional()
+	@IsNumber()
+	patissiereLongitude?: number;
+
 	@IsDateString()
 	requestedDateTime: string;
 

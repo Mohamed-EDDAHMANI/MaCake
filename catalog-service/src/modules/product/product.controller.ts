@@ -85,6 +85,16 @@ export class ProductController {
     return result;
   }
 
+  @MessagePattern(CATALOG_PATTERNS.PRODUCT_FIND_BATCH)
+  async findBatch(@Payload() payload: any) {
+    const ids: string[] = Array.isArray(payload?.ids) ? payload.ids : Array.isArray(payload?.body?.ids) ? payload.body.ids : [];
+    const result = await this.productService.findBatch(ids);
+    if (result instanceof ServiceError) {
+      throw new RpcException(result.toJSON());
+    }
+    return result;
+  }
+
   @MessagePattern(CATALOG_PATTERNS.PRODUCT_FILTER)
   async filter(@ValidatedBody(FilterProductDto) filterData: FilterProductDto) {
     this.logger.log('Filtering products');

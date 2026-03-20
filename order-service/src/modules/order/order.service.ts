@@ -37,6 +37,8 @@ export class OrderService {
       deliveryAddressSource: order.deliveryAddressSource,
       deliveryLatitude: order.deliveryLatitude ?? null,
       deliveryLongitude: order.deliveryLongitude ?? null,
+      patissiereLatitude: order.patissiereLatitude ?? null,
+      patissiereLongitude: order.patissiereLongitude ?? null,
       requestedDateTime: order.requestedDateTime,
       totalPrice: order.totalPrice,
       status: order.status,
@@ -104,6 +106,8 @@ export class OrderService {
       deliveryAddressSource: createOrderDto.deliveryAddressSource,
       deliveryLatitude: createOrderDto.deliveryLatitude ?? null,
       deliveryLongitude: createOrderDto.deliveryLongitude ?? null,
+      patissiereLatitude: createOrderDto.patissiereLatitude ?? null,
+      patissiereLongitude: createOrderDto.patissiereLongitude ?? null,
       requestedDateTime,
       totalPrice: createOrderDto.totalPrice ?? 0,
       status: OrderStatus.PENDING,
@@ -141,6 +145,8 @@ export class OrderService {
         deliveryAddressSource: order.deliveryAddressSource,
         deliveryLatitude: order.deliveryLatitude ?? null,
         deliveryLongitude: order.deliveryLongitude ?? null,
+        patissiereLatitude: order.patissiereLatitude ?? null,
+        patissiereLongitude: order.patissiereLongitude ?? null,
         requestedDateTime: order.requestedDateTime,
         totalPrice: order.totalPrice,
         status: order.status,
@@ -174,21 +180,26 @@ export class OrderService {
     }
 
     const orderIds = orders.map((o) => new Types.ObjectId(String(o._id)));
-    const allItems = await this.orderItemModel.find({ orderId: { $in: orderIds } }).lean().exec();
 
-    const itemsByOrderId = new Map<string, typeof allItems>();
-    for (const item of allItems) {
-      const key = String(item.orderId);
-      const existing = itemsByOrderId.get(key) ?? [];
-      existing.push(item);
-      itemsByOrderId.set(key, existing);
+    // Fetch only the first item per order (we only need productId for the card thumbnail).
+    const firstItems = await this.orderItemModel
+      .aggregate([
+        { $match: { orderId: { $in: orderIds } } },
+        { $sort: { _id: 1 } },
+        { $group: { _id: '$orderId', productId: { $first: '$productId' }, itemCount: { $sum: 1 } } },
+      ])
+      .exec();
+
+    const firstItemByOrderId = new Map<string, { productId: string; itemCount: number }>();
+    for (const row of firstItems) {
+      firstItemByOrderId.set(String(row._id), { productId: row.productId, itemCount: row.itemCount });
     }
 
     return {
       success: true,
       message: 'Orders fetched successfully',
       data: orders.map((order) => {
-        const items = itemsByOrderId.get(String(order._id)) ?? [];
+        const first = firstItemByOrderId.get(String(order._id));
         return {
           id: String(order._id),
           clientId: order.clientId,
@@ -198,17 +209,13 @@ export class OrderService {
           deliveryAddressSource: order.deliveryAddressSource,
           deliveryLatitude: order.deliveryLatitude ?? null,
           deliveryLongitude: order.deliveryLongitude ?? null,
+          patissiereLatitude: order.patissiereLatitude ?? null,
+          patissiereLongitude: order.patissiereLongitude ?? null,
           requestedDateTime: order.requestedDateTime,
           totalPrice: order.totalPrice,
           status: order.status,
-          items: items.map((it) => ({
-            id: String(it._id),
-            orderId: String(it.orderId),
-            productId: it.productId,
-            quantity: it.quantity,
-            price: it.price,
-            customizationDetails: it.customizationDetails,
-          })),
+          firstProductId: first?.productId ?? null,
+          itemCount: first?.itemCount ?? 0,
           createdAt: order.createdAt,
         };
       }),

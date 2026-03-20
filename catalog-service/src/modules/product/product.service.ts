@@ -373,6 +373,10 @@ export class ProductService {
               id: user.id,
               name: user.name,
               photo: user.photo ?? null,
+              city: user.city ?? null,
+              address: user.address ?? null,
+              latitude: user.latitude ?? null,
+              longitude: user.longitude ?? null,
               rating: rating?.average ?? 0,
               ratingCount: rating?.count ?? 0,
             }
@@ -410,6 +414,27 @@ export class ProductService {
     } catch (err: any) {
       this.logger.warn(`Failed to fetch ratings from notation-service: ${err?.message}`);
       return {};
+    }
+  }
+
+  async findBatch(ids: string[]) {
+    try {
+      const objectIds = ids.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
+      if (objectIds.length === 0) {
+        return { success: true, message: 'No valid ids', data: { products: [] } };
+      }
+      const docs = await this.productModel
+        .find({ _id: { $in: objectIds } }, { title: 1, images: 1 })
+        .lean()
+        .exec();
+      const products = docs.map((d: any) => ({
+        id: d._id.toString(),
+        title: d.title ?? '',
+        image: Array.isArray(d.images) && d.images.length > 0 ? d.images[0] : null,
+      }));
+      return { success: true, message: 'Batch products fetched', data: { products } };
+    } catch (error: any) {
+      return new ServiceError('INTERNAL_SERVER_ERROR', `Failed to fetch batch products: ${error.message}`, 500, 'catalog-service');
     }
   }
 

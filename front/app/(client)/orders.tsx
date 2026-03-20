@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "expo-router";
-import { View, Text, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -18,13 +18,19 @@ import {
 import { getClientOrdersApi, getPatissiereOrdersApi, type ClientOrder } from "@/store/features/order/orderApi";
 import { useAppSelector } from "@/store/hooks";
 import { fetchProductByIdApi } from "@/store/features/catalog/catalogApi";
+import { getProfileById } from "@/store/features/auth/authApi";
 import { buildPhotoUrl } from "@/lib/utils";
 import { getOrderSocket } from "@/lib/order-socket";
 
 type OrderStatus = "pending" | "accepted" | "preparing" | "completed" | "delivering" | "delivered" | "refused";
+
+const ONGOING_STATUSES: OrderStatus[] = ["pending", "accepted", "preparing", "completed", "delivering"];
+const HISTORY_STATUSES: OrderStatus[] = ["delivered", "refused"];
+
 type OrderCardData = ClientOrder & {
   title: string;
   chefName: string;
+  chefAddress: string;
   imageUri?: string;
   requestedDateTimeText: string;
 };
@@ -55,185 +61,345 @@ const statusMap: Record<OrderStatus, { bg: string; text: string; label: string }
   refused: { bg: "#fee2e2", text: "#b91c1c", label: "Refused" },
 };
 
-function formatDate(value: string): string {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
+function formatDate(value: string | Date): string {
+  const d = new Date(value as string);
+  if (Number.isNaN(d.getTime())) return String(value);
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
-function formatDateTime(value: string): string {
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
-  return `${d.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-  })} • ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
+function formatDateTime(value: string | Date): string {
+  const d = new Date(value as string);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return `${d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} • ${d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-function buildUiTitle(order: ClientOrder, firstProductNameByOrderId: Record<string, string>): string {
-  if (order.items.length === 0) return `Order #${order.id.slice(-6)}`;
-  const firstProductName = firstProductNameByOrderId[order.id] ?? "Product";
-  if (order.items.length === 1) return firstProductName;
-  return `${firstProductName} +${order.items.length - 1}`;
-}
-
-function resolveProductImage(raw?: string): string | undefined {
+function resolveImage(raw?: string | null): string | undefined {
   if (!raw) return undefined;
   return buildPhotoUrl(raw) ?? undefined;
 }
 
-function orderToCard(
-  order: ClientOrder,
-  index: number,
-  imageByOrderId: Record<string, string>,
-  firstProductNameByOrderId: Record<string, string>
-): OrderCardData {
-  return {
-    ...order,
-    title: buildUiTitle(order, firstProductNameByOrderId),
-    chefName: order.patissiereAddress || `Patissiere ${order.patissiereId.slice(-6)}`,
-    imageUri: imageByOrderId[order.id] ?? FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
-    requestedDateTimeText: formatDateTime(order.requestedDateTime),
-  };
+/** Enrich raw orders with product + patissiere data using existing proven endpoints. */
+async function enrichOrders(orders: ClientOrder[]): Promise<OrderCardData[]> {
+  if (orders.length === 0) return [];
+
+  // Deduplicate IDs so we don't fetch the same resource twice
+  const uniqueProductIds = Array.from(
+    new Set(orders.map((o) => o.firstProductId).filter((id): id is string => Boolean(id)))
+  );
+  const uniquePatissiereIds = Array.from(
+    new Set(orders.map((o) => o.patissiereId).filter(Boolean))
+  );
+
+  // Fire all requests in parallel — Promise.allSettled never throws
+  const [productResults, patissiereResults] = await Promise.all([
+    Promise.allSettled(
+      uniqueProductIds.map((id) =>
+        fetchProductByIdApi(id).then((p) => ({
+          id,
+          title: p.title ?? "",
+          image: p.images?.[0] ?? null,
+        }))
+      )
+    ),
+    Promise.allSettled(
+      uniquePatissiereIds.map((id) =>
+        getProfileById(id).then((res) => ({
+          id,
+          name: res?.data?.user?.name ?? "",
+          address: res?.data?.user?.address ?? null,
+          city: res?.data?.user?.city ?? null,
+        }))
+      )
+    ),
+  ]);
+
+  // Build lookup maps
+  const productById: Record<string, { title: string; image: string | null }> = {};
+  for (const r of productResults) {
+    if (r.status === "fulfilled" && r.value.id) {
+      productById[r.value.id] = { title: r.value.title, image: r.value.image };
+    }
+  }
+
+  const patissiereById: Record<string, { name: string; address: string | null; city: string | null }> = {};
+  for (const r of patissiereResults) {
+    if (r.status === "fulfilled" && r.value.id) {
+      patissiereById[r.value.id] = { name: r.value.name, address: r.value.address, city: r.value.city };
+    }
+  }
+
+  return orders.map((order, idx) => {
+    const product = order.firstProductId ? productById[order.firstProductId] : null;
+    const chef = patissiereById[order.patissiereId];
+
+    const chefName = chef?.name || `Chef ${order.patissiereId.slice(-6)}`;
+    const chefAddress =
+      order.patissiereAddress && order.patissiereAddress !== "Patissiere address unavailable"
+        ? order.patissiereAddress
+        : [chef?.address, chef?.city].filter(Boolean).join(", ") || "";
+
+    const rawImage = product?.image ?? null;
+    const imageUri = resolveImage(rawImage) ?? FALLBACK_IMAGES[idx % FALLBACK_IMAGES.length];
+
+    const productName = product?.title ?? "";
+    const title = productName
+      ? order.itemCount > 1
+        ? `${productName} +${order.itemCount - 1}`
+        : productName
+      : `Order #${order.id.slice(-6)}`;
+
+    return {
+      ...order,
+      title,
+      chefName,
+      chefAddress,
+      imageUri,
+      requestedDateTimeText: formatDateTime(order.requestedDateTime),
+    };
+  });
 }
 
 function getOrderDetailsRoute(orderId: string): `/(main)/order/${string}` {
   return `/(main)/order/${orderId}`;
 }
 
-export default function ClientOrdersScreen() {
+/* ─── Client Screen ─── */
+
+type ClientTab = "ongoing" | "history";
+
+function ClientOrdersView() {
   const router = useRouter();
-  const authUserId = useAppSelector((state) => state.auth.user?.id ?? "");
-  const authRole = (useAppSelector((state) => state.auth.user?.role) ?? "").toLowerCase();
-  const isPatissiere = authRole === "patissiere";
-  const [orders, setOrders] = useState<OrderCardData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [patissiereView, setPatissiereView] = useState<"created" | "to_prepare">("created");
+  const [tab, setTab] = useState<ClientTab>("ongoing");
+  const [ongoing, setOngoing] = useState<OrderCardData[]>([]);
+  const [history, setHistory] = useState<OrderCardData[]>([]);
+  const [loadingOngoing, setLoadingOngoing] = useState(false);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [errorOngoing, setErrorOngoing] = useState<string | null>(null);
+  const [errorHistory, setErrorHistory] = useState<string | null>(null);
+  const fetchedOngoing = useRef(false);
+  const fetchedHistory = useRef(false);
 
-  const loadOrders = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = isPatissiere ? await getPatissiereOrdersApi() : await getClientOrdersApi();
-      const firstProductByOrder = data
-        .map((order) => ({ orderId: order.id, productId: order.items[0]?.productId }))
-        .filter((x): x is { orderId: string; productId: string } => Boolean(x.productId));
-
-      const uniqueProductIds = Array.from(new Set(firstProductByOrder.map((x) => x.productId)));
-      const productImageById: Record<string, string> = {};
-      const productNameById: Record<string, string> = {};
-      await Promise.allSettled(
-        uniqueProductIds.map(async (productId) => {
-          const product = await fetchProductByIdApi(productId);
-          if (product.title) {
-            productNameById[productId] = product.title;
-          }
-          const imageUri = resolveProductImage(product.images?.[0]);
-          if (imageUri) productImageById[productId] = imageUri;
-        })
-      );
-
-      const imageByOrderId: Record<string, string> = {};
-      const firstProductNameByOrderId: Record<string, string> = {};
-      for (const pair of firstProductByOrder) {
-        const imageUri = productImageById[pair.productId];
-        if (imageUri) imageByOrderId[pair.orderId] = imageUri;
-        const name = productNameById[pair.productId];
-        if (name) firstProductNameByOrderId[pair.orderId] = name;
+  const loadTab = useCallback(async (which: ClientTab) => {
+    if (which === "ongoing") {
+      if (fetchedOngoing.current) return;
+      setLoadingOngoing(true);
+      setErrorOngoing(null);
+      try {
+        const data = await getClientOrdersApi();
+        const filtered = data.filter((o) => ONGOING_STATUSES.includes(o.status as OrderStatus));
+        const sorted = filtered.sort((a, b) => STATUS_PRIORITY[a.status as OrderStatus] - STATUS_PRIORITY[b.status as OrderStatus]);
+        const enriched = await enrichOrders(sorted);
+        setOngoing(enriched);
+        fetchedOngoing.current = true;
+      } catch (e: any) {
+        setErrorOngoing(e?.response?.data?.message || e?.message || "Failed to load orders.");
+      } finally {
+        setLoadingOngoing(false);
       }
-
-      setOrders(
-        data.map((order, index) =>
-          orderToCard(order, index, imageByOrderId, firstProductNameByOrderId)
-        )
-      );
-    } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || "Failed to load orders.";
-      setError(msg);
-    } finally {
-      setLoading(false);
+    } else {
+      if (fetchedHistory.current) return;
+      setLoadingHistory(true);
+      setErrorHistory(null);
+      try {
+        const data = await getClientOrdersApi();
+        const filtered = data.filter((o) => HISTORY_STATUSES.includes(o.status as OrderStatus));
+        const sorted = filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const enriched = await enrichOrders(sorted);
+        setHistory(enriched);
+        fetchedHistory.current = true;
+      } catch (e: any) {
+        setErrorHistory(e?.response?.data?.message || e?.message || "Failed to load history.");
+      } finally {
+        setLoadingHistory(false);
+      }
     }
-  }, [isPatissiere]);
+  }, []);
 
-  useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+  // Load initial tab on mount
+  useEffect(() => { loadTab("ongoing"); }, [loadTab]);
 
-  // Subscribe to realtime order status changes (and new orders)
+  // Load other tab when switched
+  const handleTabSwitch = (next: ClientTab) => {
+    setTab(next);
+    loadTab(next);
+  };
+
+  // Realtime status update
   useEffect(() => {
     const socket = getOrderSocket();
     const handler = (payload: { orderId: string; status: OrderStatus }) => {
-      setOrders((prev) => {
-        const exists = prev.some((o) => o.id === payload.orderId);
-        if (!exists) {
-          // New order not in the list yet – refetch orders
-          loadOrders();
-          return prev;
-        }
-        return prev.map((o) => (o.id === payload.orderId ? { ...o, status: payload.status } : o));
-      });
+      const update = (prev: OrderCardData[]) =>
+        prev.map((o) => o.id === payload.orderId ? { ...o, status: payload.status } : o);
+      setOngoing(update);
+      setHistory(update);
     };
     socket.on("order.status.changed", handler);
-    return () => {
-      socket.off("order.status.changed", handler);
-    };
-  }, [loadOrders]);
+    return () => { socket.off("order.status.changed", handler); };
+  }, []);
 
-  const ongoing = useMemo(
-    () =>
-      orders
-        .filter((o) => ["pending", "accepted", "preparing", "delivering"].includes(o.status))
-        .sort((a, b) => STATUS_PRIORITY[a.status] - STATUS_PRIORITY[b.status]),
-    [orders]
-  );
-  const history = useMemo(
-    () =>
-      orders
-        .filter((o) => ["completed", "delivered", "refused"].includes(o.status))
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [orders]
-  );
-  const patissiereAsClientOrders = useMemo(
-    () =>
-      orders
-        .filter((o) => o.clientId === authUserId)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [orders, authUserId]
-  );
-  const patissiereIncomingOrders = useMemo(
-    () =>
-      orders
-        .filter((o) => o.patissiereId === authUserId)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    [orders, authUserId]
-  );
-  const selectedPatissiereOrders = useMemo(
-    () => (patissiereView === "created" ? patissiereAsClientOrders : patissiereIncomingOrders),
-    [patissiereView, patissiereAsClientOrders, patissiereIncomingOrders]
-  );
+  const loading = tab === "ongoing" ? loadingOngoing : loadingHistory;
+  const error = tab === "ongoing" ? errorOngoing : errorHistory;
+  const orders = tab === "ongoing" ? ongoing : history;
 
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.loadingWrap}>
-          <MaterialIcons name="hourglass-empty" size={22} color={SLATE_400} />
-          <Text style={styles.loadingText}>Loading your orders...</Text>
+  return (
+    <>
+      <View style={styles.tabRow}>
+        <TabButton label="My Orders" active={tab === "ongoing"} onPress={() => handleTabSwitch("ongoing")} />
+        <TabButton label="History" active={tab === "history"} onPress={() => handleTabSwitch("history")} />
+      </View>
+
+      {loading ? (
+        <View style={styles.centerWrap}>
+          <ActivityIndicator size="small" color={PRIMARY} />
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (error) {
-    return (
-      <SafeAreaView style={styles.safe} edges={["top"]}>
-        <View style={styles.loadingWrap}>
-          <MaterialIcons name="error-outline" size={24} color="#b91c1c" />
+      ) : error ? (
+        <View style={styles.centerWrap}>
+          <MaterialIcons name="error-outline" size={22} color="#b91c1c" />
           <Text style={styles.errorText}>{error}</Text>
         </View>
-      </SafeAreaView>
-    );
-  }
+      ) : (
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {orders.length === 0 ? (
+            <Text style={styles.emptyText}>
+              {tab === "ongoing" ? "No active orders right now." : "No order history yet."}
+            </Text>
+          ) : (
+            orders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                isHistory={tab === "history"}
+                onViewDetails={() => router.push(getOrderDetailsRoute(order.id))}
+              />
+            ))
+          )}
+        </ScrollView>
+      )}
+    </>
+  );
+}
+
+/* ─── Patissiere Screen ─── */
+
+type PatissiereTab = "created" | "to_prepare";
+
+function PatissiereOrdersView() {
+  const router = useRouter();
+  const authUserId = useAppSelector((state) => state.auth.user?.id ?? "");
+  const [tab, setTab] = useState<PatissiereTab>("to_prepare");
+  const [created, setCreated] = useState<OrderCardData[]>([]);
+  const [toPrepare, setToPrepare] = useState<OrderCardData[]>([]);
+  const [loadingCreated, setLoadingCreated] = useState(false);
+  const [loadingToPrepare, setLoadingToPrepare] = useState(false);
+  const [errorCreated, setErrorCreated] = useState<string | null>(null);
+  const [errorToPrepare, setErrorToPrepare] = useState<string | null>(null);
+  const fetchedCreated = useRef(false);
+  const fetchedToPrepare = useRef(false);
+
+  const loadTab = useCallback(async (which: PatissiereTab) => {
+    if (which === "created") {
+      if (fetchedCreated.current) return;
+      setLoadingCreated(true);
+      setErrorCreated(null);
+      try {
+        const data = await getPatissiereOrdersApi();
+        const filtered = data
+          .filter((o) => o.clientId === authUserId)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setCreated(await enrichOrders(filtered));
+        fetchedCreated.current = true;
+      } catch (e: any) {
+        setErrorCreated(e?.response?.data?.message || e?.message || "Failed to load orders.");
+      } finally {
+        setLoadingCreated(false);
+      }
+    } else {
+      if (fetchedToPrepare.current) return;
+      setLoadingToPrepare(true);
+      setErrorToPrepare(null);
+      try {
+        const data = await getPatissiereOrdersApi();
+        const filtered = data
+          .filter((o) => o.patissiereId === authUserId)
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        setToPrepare(await enrichOrders(filtered));
+        fetchedToPrepare.current = true;
+      } catch (e: any) {
+        setErrorToPrepare(e?.response?.data?.message || e?.message || "Failed to load orders.");
+      } finally {
+        setLoadingToPrepare(false);
+      }
+    }
+  }, [authUserId]);
+
+  useEffect(() => { loadTab("to_prepare"); }, [loadTab]);
+
+  const handleTabSwitch = (next: PatissiereTab) => {
+    setTab(next);
+    loadTab(next);
+  };
+
+  useEffect(() => {
+    const socket = getOrderSocket();
+    const handler = (payload: { orderId: string; status: OrderStatus }) => {
+      const update = (prev: OrderCardData[]) =>
+        prev.map((o) => o.id === payload.orderId ? { ...o, status: payload.status } : o);
+      setCreated(update);
+      setToPrepare(update);
+    };
+    socket.on("order.status.changed", handler);
+    return () => { socket.off("order.status.changed", handler); };
+  }, []);
+
+  const loading = tab === "created" ? loadingCreated : loadingToPrepare;
+  const error = tab === "created" ? errorCreated : errorToPrepare;
+  const orders = tab === "created" ? created : toPrepare;
+
+  return (
+    <>
+      <View style={styles.tabRow}>
+        <TabButton label="My Created Orders" active={tab === "created"} onPress={() => handleTabSwitch("created")} />
+        <TabButton label="To Accept & Prepare" active={tab === "to_prepare"} onPress={() => handleTabSwitch("to_prepare")} />
+      </View>
+
+      {loading ? (
+        <View style={styles.centerWrap}>
+          <ActivityIndicator size="small" color={PRIMARY} />
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.centerWrap}>
+          <MaterialIcons name="error-outline" size={22} color="#b91c1c" />
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {orders.length === 0 ? (
+            <Text style={styles.emptyText}>
+              {tab === "created" ? "No created orders yet." : "No orders to accept or prepare."}
+            </Text>
+          ) : (
+            orders.map((order) => (
+              <OrderCard
+                key={`${tab}-${order.id}`}
+                order={order}
+                isHistory={["delivered", "refused"].includes(order.status)}
+                onViewDetails={() => router.push(getOrderDetailsRoute(order.id))}
+              />
+            ))
+          )}
+        </ScrollView>
+      )}
+    </>
+  );
+}
+
+/* ─── Root Screen ─── */
+
+export default function ClientOrdersScreen() {
+  const authRole = (useAppSelector((state) => state.auth.user?.role) ?? "").toLowerCase();
+  const isPatissiere = authRole === "patissiere";
 
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
@@ -242,126 +408,51 @@ export default function ClientOrdersScreen() {
           <MaterialIcons name="shopping-bag" size={20} color={TEXT_PRIMARY} />
         </View>
         <Text style={styles.headerTitle}>Orders</Text>
-        <Pressable style={styles.iconBtn}>
-          <MaterialIcons name="tune" size={20} color={TEXT_PRIMARY} />
-        </Pressable>
+        <View style={styles.iconGhost} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {isPatissiere ? (
-          <>
-            <View style={styles.patissiereTabs}>
-              <Pressable
-                style={[styles.patissiereTabBtn, patissiereView === "created" && styles.patissiereTabBtnActive]}
-                onPress={() => setPatissiereView("created")}
-              >
-                <Text
-                  style={[styles.patissiereTabText, patissiereView === "created" && styles.patissiereTabTextActive]}
-                >
-                  My Created Orders
-                </Text>
-              </Pressable>
-              <Pressable
-                style={[styles.patissiereTabBtn, patissiereView === "to_prepare" && styles.patissiereTabBtnActive]}
-                onPress={() => setPatissiereView("to_prepare")}
-              >
-                <Text
-                  style={[
-                    styles.patissiereTabText,
-                    patissiereView === "to_prepare" && styles.patissiereTabTextActive,
-                  ]}
-                >
-                  To Accept & Prepare
-                </Text>
-              </Pressable>
-            </View>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                {patissiereView === "created" ? "My Created Orders" : "Orders To Accept & Prepare"}
-              </Text>
-              {selectedPatissiereOrders.length ? (
-                selectedPatissiereOrders.map((order) => (
-                  <OrderCard
-                    key={`${patissiereView}-${order.id}`}
-                    order={order}
-                    history={["delivered", "refused"].includes(order.status)}
-                    onViewDetails={() => router.push(getOrderDetailsRoute(order.id))}
-                  />
-                ))
-              ) : (
-                <Text style={styles.emptyText}>
-                  {patissiereView === "created"
-                    ? "No created orders yet."
-                    : "No orders to accept or prepare right now."}
-                </Text>
-              )}
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Ongoing Orders</Text>
-              {ongoing.length ? (
-                ongoing.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    onViewDetails={() => router.push(getOrderDetailsRoute(order.id))}
-                  />
-                ))
-              ) : (
-                <Text style={styles.emptyText}>No ongoing orders right now.</Text>
-              )}
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Order History</Text>
-              {history.length ? (
-                history.map((order) => (
-                  <OrderCard
-                    key={order.id}
-                    order={order}
-                    history
-                    onViewDetails={() => router.push(getOrderDetailsRoute(order.id))}
-                  />
-                ))
-              ) : (
-                <Text style={styles.emptyText}>No delivered orders yet.</Text>
-              )}
-            </View>
-          </>
-        )}
-      </ScrollView>
+      {isPatissiere ? <PatissiereOrdersView /> : <ClientOrdersView />}
     </SafeAreaView>
+  );
+}
+
+/* ─── Shared components ─── */
+
+function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable style={[styles.tabBtn, active && styles.tabBtnActive]} onPress={onPress}>
+      <Text style={[styles.tabText, active && styles.tabTextActive]} numberOfLines={1}>{label}</Text>
+    </Pressable>
   );
 }
 
 function OrderCard({
   order,
-  history = false,
+  isHistory = false,
   onViewDetails,
 }: {
   order: OrderCardData;
-  history?: boolean;
+  isHistory?: boolean;
   onViewDetails: () => void;
 }) {
-  const status = statusMap[order.status];
+  const status = statusMap[order.status as OrderStatus];
   return (
-    <View style={[styles.card, history && styles.cardHistory]}>
+    <View style={[styles.card, isHistory && styles.cardHistory]}>
       <View style={styles.cardTop}>
         <Image source={{ uri: order.imageUri }} style={styles.image} contentFit="cover" />
         <View style={styles.info}>
           <View style={styles.rowBetween}>
-            <Text style={styles.title} numberOfLines={1}>
-              {order.title}
-            </Text>
+            <Text style={styles.title} numberOfLines={1}>{order.title}</Text>
             <View style={[styles.chip, { backgroundColor: status.bg }]}>
               <Text style={[styles.chipText, { color: status.text }]}>{status.label}</Text>
             </View>
           </View>
           <Text style={styles.chef}>{order.chefName}</Text>
+          {Boolean(order.chefAddress) && (
+            <Text style={styles.chefAddress} numberOfLines={1}>{order.chefAddress}</Text>
+          )}
           <Text style={styles.meta}>
-            {order.totalPrice.toFixed(2)} EUR • {formatDate(order.createdAt)}
+            {order.totalPrice.toFixed(2)} MAD • {formatDate(order.createdAt)}
           </Text>
           <Text style={styles.meta}>{order.requestedDateTimeText}</Text>
           <Text style={styles.meta} numberOfLines={1}>
@@ -372,19 +463,19 @@ function OrderCard({
       </View>
 
       <View style={styles.actionRow}>
-        <Pressable style={[styles.mainBtn, history && styles.secondaryBtn]} onPress={onViewDetails}>
-          <Text style={[styles.mainBtnText, history && styles.secondaryBtnText]}>
-            View Details
-          </Text>
+        <Pressable style={[styles.mainBtn, isHistory && styles.secondaryBtn]} onPress={onViewDetails}>
+          <Text style={[styles.mainBtnText, isHistory && styles.secondaryBtnText]}>View Details</Text>
         </Pressable>
         <Pressable style={styles.reviewBtn}>
           <MaterialIcons name="rate-review" size={16} color={PRIMARY} />
-          <Text style={styles.reviewBtnText}>{history ? "Read Review" : "Write Review"}</Text>
+          <Text style={styles.reviewBtnText}>{isHistory ? "Read Review" : "Write Review"}</Text>
         </Pressable>
       </View>
     </View>
   );
 }
+
+/* ─── Styles ─── */
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: BACKGROUND_LIGHT },
@@ -400,26 +491,19 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: "800", color: TEXT_PRIMARY },
   iconGhost: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
-  iconBtn: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: PRIMARY_05,
-  },
-  content: { padding: 14, gap: 20, paddingBottom: 32 },
-  section: { gap: 10 },
-  patissiereTabs: {
+  // Tabs
+  tabRow: {
     flexDirection: "row",
     backgroundColor: SURFACE,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: BORDER_SUBTLE,
+    margin: 14,
+    marginBottom: 4,
     padding: 4,
     gap: 6,
   },
-  patissiereTabBtn: {
+  tabBtn: {
     flex: 1,
     height: 36,
     borderRadius: 9,
@@ -427,30 +511,31 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "transparent",
   },
-  patissiereTabBtnActive: {
+  tabBtnActive: {
     backgroundColor: PRIMARY_05,
     borderWidth: 1,
     borderColor: `${PRIMARY}33`,
   },
-  patissiereTabText: { fontSize: 11, fontWeight: "700", color: SLATE_500 },
-  patissiereTabTextActive: { color: PRIMARY, fontWeight: "800" },
-  sectionTitle: {
-    marginLeft: 2,
-    fontSize: 11,
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-    color: SLATE_400,
-    fontWeight: "800",
-  },
+  tabText: { fontSize: 11, fontWeight: "700", color: SLATE_500 },
+  tabTextActive: { color: PRIMARY, fontWeight: "800" },
+  // Content
+  content: { padding: 14, paddingTop: 10, gap: 10, paddingBottom: 32 },
+  centerWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8, paddingTop: 80 },
+  loadingText: { color: SLATE_500, fontSize: 13, fontWeight: "600" },
+  errorText: { color: "#b91c1c", fontSize: 13, fontWeight: "600", textAlign: "center", paddingHorizontal: 20 },
   emptyText: {
+    margin: 14,
+    marginTop: 10,
     backgroundColor: SURFACE,
     borderWidth: 1,
     borderColor: BORDER_SUBTLE,
     borderRadius: 12,
-    padding: 12,
+    padding: 14,
     color: SLATE_500,
     fontSize: 13,
+    textAlign: "center",
   },
+  // Card
   card: {
     backgroundColor: SURFACE,
     borderRadius: 14,
@@ -466,6 +551,7 @@ const styles = StyleSheet.create({
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", gap: 8 },
   title: { flex: 1, fontSize: 14, fontWeight: "800", color: TEXT_PRIMARY },
   chef: { fontSize: 12, color: SLATE_500, fontWeight: "600" },
+  chefAddress: { fontSize: 11, color: SLATE_400, fontWeight: "500" },
   meta: { fontSize: 11, color: SLATE_500, fontWeight: "600" },
   chip: { borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2 },
   chipText: { fontSize: 9, fontWeight: "800", letterSpacing: 0.4, textTransform: "uppercase" },
@@ -501,7 +587,4 @@ const styles = StyleSheet.create({
     borderColor: `${PRIMARY}22`,
   },
   reviewBtnText: { color: PRIMARY, fontSize: 12, fontWeight: "800" },
-  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
-  loadingText: { color: SLATE_500, fontSize: 13, fontWeight: "600" },
-  errorText: { color: "#b91c1c", fontSize: 13, fontWeight: "600", textAlign: "center" },
 });

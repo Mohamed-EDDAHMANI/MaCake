@@ -173,7 +173,7 @@ export default function OrderDetailsScreen() {
         setOtherParty(null);
       }
 
-      const uniqueProductIds = Array.from(new Set(found.items.map((it) => it.productId).filter(Boolean)));
+      const uniqueProductIds = Array.from(new Set((found.items ?? []).map((it) => it.productId).filter(Boolean)));
       const previews: Record<string, ProductPreview> = {};
       await Promise.allSettled(
         uniqueProductIds.map(async (productId) => {

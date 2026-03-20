@@ -19,6 +19,8 @@ export interface CreateOrderPayload {
   deliveryAddressSource: "profile" | "current_location";
   deliveryLatitude?: number;
   deliveryLongitude?: number;
+  patissiereLatitude?: number;
+  patissiereLongitude?: number;
   requestedDateTime: string;
   totalPrice?: number;
   items: CreateOrderItemPayload[];
@@ -37,6 +39,7 @@ export interface ClientOrderItem {
   };
 }
 
+/** Slim order used for order-list cards (findAll response). */
 export interface ClientOrder {
   id: string;
   clientId: string;
@@ -49,8 +52,13 @@ export interface ClientOrder {
   requestedDateTime: string;
   totalPrice: number;
   status: "pending" | "accepted" | "preparing" | "completed" | "delivering" | "delivered" | "refused";
-  items: ClientOrderItem[];
+  /** First product id — used to fetch the card thumbnail and title. */
+  firstProductId: string | null;
+  /** Total number of items in the order. */
+  itemCount: number;
   createdAt: string;
+  /** Full items — present only when fetching a single order detail. */
+  items?: ClientOrderItem[];
 }
 
 export async function createOrderApi(payload: CreateOrderPayload) {
@@ -58,14 +66,29 @@ export async function createOrderApi(payload: CreateOrderPayload) {
   return res.data;
 }
 
+function normalizeOrders(raw: any[]): ClientOrder[] {
+  return raw.map((o) => {
+    // Support both new slim format (firstProductId/itemCount) and old format (items[])
+    const hasSlimFormat = o.firstProductId !== undefined || o.itemCount !== undefined;
+    if (hasSlimFormat) return o as ClientOrder;
+    const items: ClientOrderItem[] = Array.isArray(o.items) ? o.items : [];
+    return {
+      ...o,
+      firstProductId: items[0]?.productId ?? null,
+      itemCount: items.length,
+      items,
+    } as ClientOrder;
+  });
+}
+
 export async function getClientOrdersApi(): Promise<ClientOrder[]> {
   const res = await api.get("/s3/orders/find-all");
-  return res.data?.data ?? [];
+  return normalizeOrders(res.data?.data ?? []);
 }
 
 export async function getPatissiereOrdersApi(): Promise<ClientOrder[]> {
   const res = await api.get("/s3/orders/patissiere/find-all");
-  return res.data?.data ?? [];
+  return normalizeOrders(res.data?.data ?? []);
 }
 
 export async function getClientOrderByIdApi(orderId: string): Promise<ClientOrder | null> {

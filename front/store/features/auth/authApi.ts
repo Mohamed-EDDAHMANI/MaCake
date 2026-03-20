@@ -112,6 +112,30 @@ export async function getProfileById(
   return res.data;
 }
 
+/**
+ * Batch-fetch minimal user info (id, name, address, city) for a list of user IDs.
+ * POST /s1/auth/find-by-ids
+ */
+export async function fetchUsersBatchApi(
+  ids: string[]
+): Promise<Record<string, { id: string; name: string; address: string | null; city: string | null }>> {
+  if (ids.length === 0) return {};
+  const res = await api.post("/s1/auth/find-by-ids", { ids });
+  const users: Record<string, any> = res.data?.data?.users ?? res.data?.users ?? {};
+  const result: Record<string, { id: string; name: string; address: string | null; city: string | null }> = {};
+  for (const [id, u] of Object.entries(users)) {
+    if (u && typeof u === "object") {
+      result[id] = {
+        id: String((u as any).id ?? id),
+        name: String((u as any).name ?? ""),
+        address: (u as any).address ?? null,
+        city: (u as any).city ?? null,
+      };
+    }
+  }
+  return result;
+}
+
 /* ─── Update profile ─── */
 
 const UPDATE_PROFILE_PATH = "/s1/auth/update-profile";

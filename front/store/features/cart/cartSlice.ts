@@ -5,6 +5,8 @@ export interface CartItem {
   productId: string;
   patissiereId?: string;
   patissiereAddress?: string;
+  patissiereLatitude?: number | null;
+  patissiereLongitude?: number | null;
   title: string;
   price: number;
   quantity: number;

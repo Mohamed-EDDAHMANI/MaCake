@@ -189,9 +189,10 @@ export default function CheckoutScreen() {
         return;
       }
       const patissiereId = patissiereIds[0];
-      const patissiereAddress =
-        items.find((item) => item.patissiereId === patissiereId)?.patissiereAddress ||
-        "Patissiere address unavailable";
+      const patissiereItem = items.find((item) => item.patissiereId === patissiereId);
+      const patissiereAddress = patissiereItem?.patissiereAddress || "Patissiere address unavailable";
+      const patissiereLatitude = patissiereItem?.patissiereLatitude ?? undefined;
+      const patissiereLongitude = patissiereItem?.patissiereLongitude ?? undefined;
 
       await createOrderApi({
         clientId: user.id,
@@ -202,6 +203,8 @@ export default function CheckoutScreen() {
         deliveryAddressSource,
         deliveryLatitude: deliveryLatitude ?? undefined,
         deliveryLongitude: deliveryLongitude ?? undefined,
+        patissiereLatitude,
+        patissiereLongitude,
         requestedDateTime: `${requestedDate}T${requestedTime}:00`,
         items: items.map((item) => ({
           productId: item.productId,

@@ -16,6 +16,8 @@ export interface PatissiereInfo {
   photo: string | null;
   city?: string | null;
   address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   rating: number;
   ratingCount: number;
 }
@@ -141,6 +143,23 @@ export async function fetchProductByIdApi(id: string): Promise<Product> {
   const res = await api.get(`/s2/product/getOne/${id}`);
   const raw = res.data?.data?.product ?? res.data?.data ?? res.data;
   return mapProduct(raw);
+}
+
+/**
+ * Fetch minimal product info (id, title, image) for a batch of product IDs.
+ * POST /s2/product/batch  (public route — used by order cards)
+ */
+export async function fetchProductsBatchApi(
+  ids: string[]
+): Promise<Array<{ id: string; title: string; image: string | null }>> {
+  if (ids.length === 0) return [];
+  const res = await api.post("/s2/product/batch", { ids });
+  const raw: any[] = res.data?.data?.products ?? res.data?.products ?? [];
+  return raw.map((p: any) => ({
+    id: String(p.id ?? p._id ?? ""),
+    title: String(p.title ?? ""),
+    image: p.image ?? null,
+  }));
 }
 
 /**
