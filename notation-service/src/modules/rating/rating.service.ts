@@ -157,6 +157,15 @@ export class RatingService implements OnModuleInit {
     }
   }
 
+  async checkByOrder(fromUserId: string, orderId: string) {
+    try {
+      const exists = await this.ratingModel.exists({ fromUserId, orderId });
+      return successPayload('Rating check complete', { hasRated: !!exists });
+    } catch (error) {
+      return new ServiceError('INTERNAL_SERVER_ERROR', error?.message || 'Failed to check rating', 500);
+    }
+  }
+
   async delete(ratingId: string) {
     try {
       const rating = await this.ratingModel.findByIdAndDelete(ratingId).exec();

@@ -37,6 +37,7 @@ import { openEstimationPanel, closeEstimationPanel } from "@/store/features/esti
 import { OrderEstimationSection } from "@/components/order/OrderEstimationSection";
 import { EstimationCreateModal } from "@/components/order/EstimationCreateModal";
 import { OrderRatingModal, type DeliveryForRating } from "@/components/order/OrderRatingModal";
+import { checkRatingByOrderApi } from "@/store/features/rating/ratingApi";
 
 type TimelineStep = "pending" | "accepted" | "payment" | "preparing" | "completed" | "delivering" | "delivered";
 
@@ -128,6 +129,7 @@ export default function OrderDetailsScreen() {
   const [estimationsRefresh, setEstimationsRefresh] = useState(0);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [deliveryForRating, setDeliveryForRating] = useState<DeliveryForRating | null>(null);
+  const [hasRated, setHasRated] = useState(false);
   const authUserId = useAppSelector((state) => state.auth.user?.id ?? "");
   const authRole = (useAppSelector((state) => state.auth.user?.role) ?? "").toLowerCase();
   const dispatch = useAppDispatch();
@@ -204,6 +206,15 @@ export default function OrderDetailsScreen() {
       loadOrder();
     }, [loadOrder]),
   );
+
+  // Check if client has already rated this delivered order
+  useEffect(() => {
+    setHasRated(false);
+    if (!order || order.status !== "delivered" || order.clientId !== authUserId) return;
+    checkRatingByOrderApi(authUserId, order.id).then((rated) => {
+      if (rated) setHasRated(true);
+    });
+  }, [order?.id, order?.status, authUserId]);
 
   // Live status updates for this specific order
   useEffect(() => {
@@ -586,13 +597,17 @@ export default function OrderDetailsScreen() {
             </View>
           ) : null}
           {showRatingButton ? (
-            <Pressable
-              style={styles.ratingAction}
-              onPress={handleOpenRatingModal}
-            >
-              <MaterialIcons name="star" size={18} color="#fff" />
-              <Text style={styles.ratingActionText}>Rate order</Text>
-            </Pressable>
+            hasRated ? (
+              <View style={styles.ratedBadge}>
+                <MaterialIcons name="star" size={16} color="#15803d" />
+                <Text style={styles.ratedBadgeText}>Rated</Text>
+              </View>
+            ) : (
+              <Pressable style={styles.ratingAction} onPress={handleOpenRatingModal}>
+                <MaterialIcons name="star" size={18} color="#fff" />
+                <Text style={styles.ratingActionText}>Rate order</Text>
+              </Pressable>
+            )
           ) : null}
           <Pressable style={styles.primaryAction}>
             <MaterialIcons name="chat-bubble-outline" size={18} color="#fff" />
@@ -632,6 +647,7 @@ export default function OrderDetailsScreen() {
         onSuccess={() => {
           setShowRatingModal(false);
           setDeliveryForRating(null);
+          setHasRated(true);
         }}
       />
     </SafeAreaView>
@@ -952,6 +968,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   ratingActionText: { color: "#fff", fontSize: 14, fontWeight: "800" },
+  ratedBadge: {
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#dcfce7",
+    borderWidth: 1,
+    borderColor: "#86efac",
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  ratedBadgeText: { color: "#15803d", fontSize: 14, fontWeight: "800" },
   primaryAction: {
     height: 50,
     borderRadius: 12,

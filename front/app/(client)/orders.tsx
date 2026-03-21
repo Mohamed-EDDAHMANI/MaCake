@@ -228,10 +228,25 @@ function ClientOrdersView() {
   useEffect(() => {
     const socket = getOrderSocket();
     const handler = (payload: { orderId: string; status: OrderStatus }) => {
-      const update = (prev: OrderCardData[]) =>
-        prev.map((o) => o.id === payload.orderId ? { ...o, status: payload.status } : o);
-      setOngoing(update);
-      setHistory(update);
+      const isTerminal = HISTORY_STATUSES.includes(payload.status);
+      if (isTerminal) {
+        // Move order from ongoing to history
+        setOngoing((prev) => {
+          const moved = prev.find((o) => o.id === payload.orderId);
+          if (moved) {
+            setHistory((h) => {
+              const alreadyInHistory = h.some((o) => o.id === payload.orderId);
+              if (alreadyInHistory) return h.map((o) => o.id === payload.orderId ? { ...o, status: payload.status } : o);
+              return [{ ...moved, status: payload.status }, ...h];
+            });
+            return prev.filter((o) => o.id !== payload.orderId);
+          }
+          return prev;
+        });
+        setHistory((prev) => prev.map((o) => o.id === payload.orderId ? { ...o, status: payload.status } : o));
+      } else {
+        setOngoing((prev) => prev.map((o) => o.id === payload.orderId ? { ...o, status: payload.status } : o));
+      }
     };
     socket.on("order.status.changed", handler);
     return () => { socket.off("order.status.changed", handler); };
@@ -479,7 +494,7 @@ function OrderCard({
         <Pressable style={[styles.mainBtn, isHistory && styles.secondaryBtn]} onPress={onViewDetails}>
           <Text style={[styles.mainBtnText, isHistory && styles.secondaryBtnText]}>View Details</Text>
         </Pressable>
-        <Pressable style={styles.reviewBtn}>
+        <Pressable style={styles.reviewBtn} onPress={onViewDetails}>
           <MaterialIcons name="rate-review" size={16} color={PRIMARY} />
           <Text style={styles.reviewBtnText}>{isHistory ? "Read Review" : "Write Review"}</Text>
         </Pressable>

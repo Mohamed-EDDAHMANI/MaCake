@@ -7,6 +7,7 @@ export const NOTATION_PATTERNS = {
   RATING_AVERAGE: 'rating/average',
   RATING_BATCH_AVERAGE: 'rating/batch-average',
   RATING_DELETE: 'rating/delete',
+  RATING_CHECK_BY_ORDER: 'rating/check-by-order',
 
   // Like patterns
   LIKE_TOGGLE: 'like/toggle',

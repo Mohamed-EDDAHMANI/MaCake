@@ -34,6 +34,7 @@ import { fetchProductById, toggleLike, clearSelectedProduct } from "@/store/feat
 import { toggleFollow } from "@/store/features/follow";
 import { addItem } from "@/store/features/cart/cartSlice";
 import { buildPhotoUrl } from "@/lib/utils";
+import { getRatingSocket, type RatingCreatedPayload } from "@/lib/rating-socket";
 import OrderSuccessPopup from "@/components/product-detail/OrderSuccessPopup";
 import OrderCustomizerPopup from "@/components/product-detail/OrderCustomizerPopup";
 
@@ -119,6 +120,22 @@ export default function ProductDetailScreen() {
       dispatch(clearSelectedProduct());
     };
   }, [id]);
+
+  // Real-time: refetch when this product or its patissiere is rated
+  useEffect(() => {
+    if (!id) return;
+    const socket = getRatingSocket();
+    const handler = (payload: RatingCreatedPayload) => {
+      const patissiereId = product?.patissiere?.id;
+      if (payload.productId === id || (patissiereId && payload.toUserId === patissiereId)) {
+        dispatch(fetchProductById(id));
+      }
+    };
+    socket.on("rating.created", handler);
+    return () => {
+      socket.off("rating.created", handler);
+    };
+  }, [id, product?.patissiere?.id]);
 
   if (!id) {
     return (

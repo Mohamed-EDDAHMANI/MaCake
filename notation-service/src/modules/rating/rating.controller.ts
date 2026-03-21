@@ -49,6 +49,15 @@ export class RatingController {
     return result;
   }
 
+  @MessagePattern(NOTATION_PATTERNS.RATING_CHECK_BY_ORDER)
+  async checkByOrder(data: any) {
+    const fromUserId = data?.body?.fromUserId || data?.query?.fromUserId;
+    const orderId = data?.body?.orderId || data?.query?.orderId || data?.params?.id;
+    const result = await this.ratingService.checkByOrder(fromUserId, orderId);
+    if (result instanceof ServiceError) throw new RpcException(result.toJSON());
+    return result;
+  }
+
   @MessagePattern(NOTATION_PATTERNS.RATING_DELETE)
   async delete(data: any) {
     const ratingId = data?.params?.id || data?.body?.ratingId;
