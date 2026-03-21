@@ -499,7 +499,7 @@ export default function OrderDetailsScreen() {
           <PriceRow label="Subtotal" value={breakdown.subtotal} />
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Delivery Fee</Text>
-            <Text style={styles.priceValue}>0.00 EUR</Text>
+            <Text style={styles.priceValue}>0.00 MAD</Text>
           </View>
           <View style={styles.totalDivider} />
           <PriceRow label="Total" value={breakdown.total} primary strong />
@@ -681,7 +681,7 @@ function OrderItemCard({
             <Text style={styles.itemTitle} numberOfLines={2}>
               {title}
             </Text>
-            <Text style={styles.itemPrice}>{itemTotal.toFixed(2)} EUR</Text>
+            <Text style={styles.itemPrice}>{itemTotal.toFixed(2)} MAD</Text>
           </View>
           <Text style={styles.itemQty}>Qty: {item.quantity}</Text>
           {showProductDescription && product?.description ? (
@@ -736,7 +736,7 @@ function PriceRow({
     <View style={styles.priceRow}>
       <Text style={[styles.priceLabel, strong && styles.priceStrong]}>{label}</Text>
       <Text style={[styles.priceValue, strong && styles.priceStrong, primary && styles.pricePrimary]}>
-        {value.toFixed(2)} EUR
+        {value.toFixed(2)} MAD
       </Text>
     </View>
   );

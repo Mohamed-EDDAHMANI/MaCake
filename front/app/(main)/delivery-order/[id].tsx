@@ -325,13 +325,13 @@ export default function DeliveryOrderDetailsScreen() {
         <View style={styles.totalCard}>
           <View style={styles.priceRow}>
             <Text style={styles.priceLabel}>Subtotal</Text>
-            <Text style={styles.priceValue}>{subtotal.toFixed(2)} EUR</Text>
+            <Text style={styles.priceValue}>{subtotal.toFixed(2)} MAD</Text>
           </View>
           <View style={styles.totalDivider} />
           <View style={styles.priceRow}>
             <Text style={[styles.priceLabel, styles.priceStrong]}>Potential earnings</Text>
             <Text style={[styles.priceValue, styles.priceStrong, styles.pricePrimary]}>
-              {potentialEarnings.toFixed(2)} EUR
+              {potentialEarnings.toFixed(2)} MAD
             </Text>
           </View>
         </View>
@@ -415,7 +415,7 @@ function OrderItemRow({ item, title, imageUri }: { item: ClientOrderItem; title:
         {notes ? <Text style={styles.itemNotes} numberOfLines={1}>{notes}</Text> : null}
         <Text style={styles.itemQty}>Qty: {item.quantity}</Text>
       </View>
-      <Text style={styles.itemPrice}>{total.toFixed(2)} EUR</Text>
+      <Text style={styles.itemPrice}>{total.toFixed(2)} MAD</Text>
     </View>
   );
 }

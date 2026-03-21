@@ -33,7 +33,12 @@
       "Bash(done)",
       "Bash(xargs grep:*)",
       "Bash(grep:*)",
-      "Bash(find /c/Users/Youcode/Desktop/MaCake -type d -name *payment* -o -name *s5*)"
+      "Bash(find /c/Users/Youcode/Desktop/MaCake -type d -name *payment* -o -name *s5*)",
+      "Bash(npx jest:*)",
+      "Bash(for f:*)",
+      "Bash(do)",
+      "Bash(echo \"=== $f ===\")",
+      "Read(//c/Users/Youcode/Desktop/MaCake/catalog-service/**)"
     ]
   }
 }

@@ -109,7 +109,7 @@ export function EstimationCreateModal({
               </View>
 
               <View style={styles.fields}>
-                <Text style={styles.label}>Delivery Price (EUR)</Text>
+                <Text style={styles.label}>Delivery Price (MAD)</Text>
                 <View style={styles.inputRow}>
                   <View style={styles.inputIcon}>
                     <MaterialIcons name="payments" size={20} color={SLATE_400} />

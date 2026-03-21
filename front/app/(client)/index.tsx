@@ -66,7 +66,7 @@ const STATIC_FIRST_TRENDING = {
   imageUri: "https://lh3.googleusercontent.com/aida-public/AB6AXuDHuAa0G2U1GczO9nZkijiKJCUUWvDVMotVt2X2oY3zt_Ayl6-89ugPoa2mYRp_RmMD8JzPdaZxNkUqsOhiji3Rk0DXReqsZTaSXxwTVG_LjsH8EqC-BOgXYqGPTUnVbyxMxjkX5JQmPRYSJAcqYQSUIiu8dGl7iQJFv1FpY279iYHWObTk6VOsrlGpOQqMt_jXv06_azg5gd50HjcgbR2rLK8PfAd7h1P9d9h8i9GSpgcDb7zOWrcNUqzHHrXKe8oocmuyGTVY0Q0",
   title: "Wild Strawberry Velour",
   location: "Paris, FR",
-  price: "$85",
+  price: "85 MAD",
   chefName: "Chef Sophie Laurent",
   chefAvatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuCzpCaVpNOQqDljOvjQEkIrS92XiCRy4rphkIZdacSbRd8Cd5gCn3GOMJlVDukJCUdtaf7GKwEY3oIBjsUZ3UieCQ65Hfb_wnpGN5Pzs0At7_1mAG0CNqaI5-sxTE_isbU-MjRajx6ofiz0embCMG2uu2xunxiXGXHgojNN_8gtJxv0MIF_H9MOxbtZ_x-76rcXsm0fRVepY-2IflnX8aTqSkq-6vfUlKeYfouXEC-5aKizz7JYZRqyKKu6Cujw81eBebzGzLWXWNA",
   rating: "4.9",

@@ -220,7 +220,7 @@ function ClientAcceptedEstimationCard({
           <MaterialIcons name="check-circle" size={14} color="#15803d" />
           <Text style={styles.acceptedBadgeText}>Accepted by delivery</Text>
         </View>
-        <Text style={styles.cardPrice}>{item.price.toFixed(2)} EUR</Text>
+        <Text style={styles.cardPrice}>{item.price.toFixed(2)} MAD</Text>
       </View>
       <Text style={styles.cardDetails} numberOfLines={4}>{item.details}</Text>
       <Text style={styles.cardTime}>{formatEstimationTime(item.createdAt)}</Text>
@@ -358,7 +358,7 @@ function DeliveryEstimationCard({
   return (
     <View style={styles.card}>
       <View style={styles.cardRow}>
-        <Text style={styles.cardPrice}>{item.price.toFixed(2)} EUR</Text>
+        <Text style={styles.cardPrice}>{item.price.toFixed(2)} MAD</Text>
       </View>
       <Text style={styles.cardDetails} numberOfLines={4}>{item.details}</Text>
       <Text style={styles.cardTime}>{formatEstimationTime(item.createdAt)}</Text>
@@ -402,7 +402,7 @@ function EstimationCard({ item }: { item: EstimationItem }) {
         <View style={[styles.badge, item.userRole === "client" ? styles.badgeClient : styles.badgeDelivery]}>
           <Text style={styles.badgeText}>{item.userRole}</Text>
         </View>
-        <Text style={styles.cardPrice}>{item.price.toFixed(2)} EUR</Text>
+        <Text style={styles.cardPrice}>{item.price.toFixed(2)} MAD</Text>
       </View>
       <Text style={styles.cardDetails} numberOfLines={4}>{item.details}</Text>
       <Text style={styles.cardTime}>{formatEstimationTime(item.createdAt)} • {item.status}</Text>
