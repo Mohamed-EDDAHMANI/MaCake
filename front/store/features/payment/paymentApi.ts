@@ -56,3 +56,8 @@ export async function confirmOrderStripePaymentApi(paymentIntentId: string): Pro
   const res = await api.post("/s5/payment/confirm", { paymentIntentId });
   return res.data?.data ?? {};
 }
+
+export async function confirmDeliveryStripePaymentApi(paymentIntentId: string): Promise<WalletTopUpResponse> {
+  const res = await api.post("/s5/payment/delivery-confirm", { paymentIntentId });
+  return res.data?.data ?? {};
+}

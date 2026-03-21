@@ -246,7 +246,7 @@ export default function ClientCartScreen() {
                     <View style={styles.imageWrap}>
                       {item.imageUri ? (
                         <Image
-                          source={{ uri: item.imageUri[0] }}
+                          source={{ uri: item.imageUri }}
                           style={styles.image}
                           contentFit="cover"
                         />

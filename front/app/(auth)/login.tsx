@@ -9,7 +9,6 @@ import {
   Platform,
   ActivityIndicator,
   StyleSheet,
-  Dimensions,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -19,17 +18,14 @@ import { login as loginUser, setCredentialsFromResponse, logout } from "@/store/
 import { useAppDispatch } from "@/store/hooks";
 import {
   PRIMARY,
-  PRIMARY_TINT,
   BACKGROUND_LIGHT,
   SLATE_200,
   SLATE_400,
   SLATE_500,
-  SLATE_600,
   SLATE_700,
   TEXT_PRIMARY,
 } from "@/constants/colors";
-
-const { height: WINDOW_HEIGHT } = Dimensions.get("window");
+import MaCakeLogo from "@/components/common/MaCakeLogo";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -76,54 +72,73 @@ export default function LoginScreen() {
     }
   };
 
-  const contentMinHeight = WINDOW_HEIGHT - insets.top - insets.bottom;
-
   return (
-    <SafeAreaView style={styles.safe} edges={["top", "bottom"]}>
-      <View style={styles.container}>
-        <LinearGradient
-          colors={["rgba(218, 27, 97, 0.12)", "transparent"]}
-          start={{ x: 0.5, y: 1 }}
-          end={{ x: 0.5, y: 0 }}
-          style={styles.gradient}
-          pointerEvents="none"
-        />
-
-        {/* Top bar – fixed */}
-        <View style={[styles.topBar, { paddingTop: insets.top + 12 }]}>
-          <Pressable
-            onPress={() => router.replace("/(main)")}
-            style={styles.closeBtn}
-          >
-            <MaterialIcons name="close" size={24} color={TEXT_PRIMARY} />
-          </Pressable>
-          <Text style={styles.topBarTitle}>MaCake</Text>
-          <View style={styles.closeBtn} />
-        </View>
-
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={styles.keyboard}
+    <SafeAreaView style={styles.safe} edges={["bottom"]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.keyboard}
+      >
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <ScrollView
-            contentContainerStyle={[styles.scrollContent, { minHeight: contentMinHeight }]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.centeredBlock}>
-              {/* Hero */}
-              <View style={styles.hero}>
-                <View style={styles.heroIconWrap}>
-                  <MaterialIcons name="cake" size={48} color={PRIMARY} />
-                </View>
-                <Text style={styles.heroTitle}>Welcome Back</Text>
-                <Text style={styles.heroSubtitle}>
-                  Login to your premium pastry marketplace
-                </Text>
-              </View>
+          {/* ── Hero Header ── */}
+          <View style={styles.headerOuter}>
+            <LinearGradient
+              colors={["#110008", "#2D0E1C", "#DA1B61"]}
+              start={{ x: 0.1, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.headerGradient, { paddingTop: insets.top + 16 }]}
+            >
+              {/* Decorative circles */}
+              <View style={styles.deco1} />
+              <View style={styles.deco2} />
+              <View style={styles.deco3} />
 
-              {/* Form */}
-              <View style={styles.form}>
+              {/* Close button */}
+              <Pressable
+                onPress={() => router.replace("/")}
+                style={styles.closeBtn}
+                hitSlop={10}
+              >
+                <MaterialIcons name="close" size={20} color="rgba(255,255,255,0.8)" />
+              </Pressable>
+
+              {/* Logo + brand */}
+              <View style={styles.headerCenter}>
+                <MaCakeLogo size="lg" />
+
+                <View style={styles.headerTextBlock}>
+                  <Text style={styles.welcomeTitle}>Welcome Back</Text>
+                  <Text style={styles.welcomeSub}>
+                    Sign in to your pastry world
+                  </Text>
+                </View>
+
+                {/* Small pill tags */}
+                <View style={styles.pillRow}>
+                  <View style={styles.pill}>
+                    <Text style={styles.pillText}>🎂 Handmade</Text>
+                  </View>
+                  <View style={styles.pill}>
+                    <Text style={styles.pillText}>🛵 Fast Delivery</Text>
+                  </View>
+                  <View style={styles.pill}>
+                    <Text style={styles.pillText}>⭐ Top Bakers</Text>
+                  </View>
+                </View>
+              </View>
+            </LinearGradient>
+
+            {/* Curved bottom cutout */}
+            <View style={styles.headerCurve} />
+          </View>
+
+          {/* ── Form card ── */}
+          <View style={styles.formCard}>
+            {/* Form */}
+            <View style={styles.form}>
                 <View style={styles.field}>
                   <Text style={styles.label}>Email Address</Text>
                   <View style={styles.inputWrap}>
@@ -216,7 +231,6 @@ export default function LoginScreen() {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </View>
     </SafeAreaView>
   );
 }
@@ -226,80 +240,120 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BACKGROUND_LIGHT,
   },
-  container: {
-    flex: 1,
-  },
-  gradient: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 160,
-    zIndex: 0,
-  },
-  topBar: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 24,
-    paddingBottom: 12,
-    zIndex: 10,
-  },
-  closeBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: PRIMARY_TINT,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  topBarTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: TEXT_PRIMARY,
-  },
   keyboard: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
+  },
+
+  /* ── Hero Header ── */
+  headerOuter: {
+    marginBottom: -1, // prevent gap between gradient and curve
+  },
+  headerGradient: {
     paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingBottom: 56,
+    overflow: "hidden",
+    position: "relative",
   },
-  centeredBlock: {
-    maxWidth: 400,
-    width: "100%",
-    alignSelf: "center",
+  deco1: {
+    position: "absolute",
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    backgroundColor: "rgba(255,255,255,0.04)",
+    top: -60,
+    right: -60,
   },
-  hero: {
-    alignItems: "center",
-    marginBottom: 40,
+  deco2: {
+    position: "absolute",
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "rgba(255,140,66,0.08)",
+    bottom: 10,
+    left: -50,
   },
-  heroIconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 24,
-    backgroundColor: PRIMARY_TINT,
+  deco3: {
+    position: "absolute",
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.1)",
+    top: 40,
+    left: 30,
+  },
+  closeBtn: {
+    alignSelf: "flex-end",
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 24,
   },
-  heroTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: TEXT_PRIMARY,
-    marginBottom: 8,
-    textAlign: "center",
+  headerCenter: {
+    alignItems: "center",
+    paddingBottom: 8,
   },
-  heroSubtitle: {
-    fontSize: 15,
-    color: SLATE_600,
+  headerTextBlock: {
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  welcomeTitle: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#fff",
     textAlign: "center",
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  welcomeSub: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.65)",
+    textAlign: "center",
+    fontWeight: "400",
+  },
+  pillRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+    justifyContent: "center",
+  },
+  pill: {
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  pillText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.85)",
+    letterSpacing: 0.3,
+  },
+  /* Curved bottom cutout */
+  headerCurve: {
+    height: 36,
+    backgroundColor: BACKGROUND_LIGHT,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    marginTop: -34,
+  },
+
+  /* ── Form card ── */
+  formCard: {
+    paddingHorizontal: 24,
+    paddingBottom: 32,
+    backgroundColor: BACKGROUND_LIGHT,
   },
   form: {
     marginBottom: 8,
@@ -325,11 +379,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     height: 56,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: SLATE_200,
     backgroundColor: "#fff",
     paddingHorizontal: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: { elevation: 1 },
+    }),
   },
   inputIcon: {
     marginRight: 12,
@@ -349,17 +412,19 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: "rgba(220, 38, 38, 0.1)",
+    borderRadius: 10,
+    backgroundColor: "rgba(220, 38, 38, 0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(220, 38, 38, 0.15)",
   },
   errorText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#b91c1c",
   },
   submitBtn: {
     width: "100%",
     height: 56,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 24,
@@ -367,11 +432,11 @@ const styles = StyleSheet.create({
     ...Platform.select({
       ios: {
         shadowColor: PRIMARY,
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.25,
-        shadowRadius: 8,
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.35,
+        shadowRadius: 12,
       },
-      android: { elevation: 4 },
+      android: { elevation: 6 },
     }),
   },
   submitBtnDisabled: {
@@ -381,9 +446,10 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",
+    letterSpacing: 0.3,
   },
   dividerWrap: {
-    marginVertical: 32,
+    marginVertical: 28,
     position: "relative",
     alignItems: "center",
   },
@@ -400,26 +466,36 @@ const styles = StyleSheet.create({
     backgroundColor: BACKGROUND_LIGHT,
   },
   dividerText: {
-    fontSize: 12,
-    fontWeight: "600",
+    fontSize: 11,
+    fontWeight: "700",
     color: SLATE_500,
     textTransform: "uppercase",
+    letterSpacing: 1,
   },
   socialRow: {
     flexDirection: "row",
-    gap: 16,
+    gap: 14,
     marginBottom: 32,
   },
   socialBtn: {
     flex: 1,
-    height: 56,
-    borderRadius: 12,
+    height: 52,
+    borderRadius: 14,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: SLATE_200,
     backgroundColor: "#fff",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: { elevation: 1 },
+    }),
   },
   socialBtnText: {
     fontSize: 14,

@@ -13,6 +13,7 @@ import { BlurView } from "expo-blur";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { PRIMARY, PRIMARY_TINT, SLATE_500, SLATE_600, TEXT_PRIMARY } from "@/constants/colors";
+import MaCakeLogo from "@/components/common/MaCakeLogo";
 
 type AuthModalContextValue = {
   showAuthModal: () => void;
@@ -60,7 +61,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
             )}
             <View style={styles.cardInner}>
               <View style={styles.iconWrap}>
-                <MaterialIcons name="cake" size={40} color={PRIMARY} />
+                <MaCakeLogo sizePx={72} />
               </View>
               <Text style={styles.title}>Welcome</Text>
               <Text style={styles.subtitle}>
@@ -122,12 +123,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   iconWrap: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
-    backgroundColor: PRIMARY_TINT,
-    alignItems: "center",
-    justifyContent: "center",
     marginBottom: 20,
   },
   title: {

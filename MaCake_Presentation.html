@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MaCake — Project Presentation</title>
+<style>
+  /* ── Reset & Base ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --pink:    #DA1B61;
+    --pink-d:  #B8144F;
+    --pink-l:  #F5698B;
+    --pink-xl: #FDE8F0;
+    --dark:    #1A0A10;
+    --slate:   #4A5568;
+    --light:   #F9FAFB;
+    --white:   #FFFFFF;
+    --accent:  #FF8C42;
+    --blue:    #3B82F6;
+    --green:   #10B981;
+    --purple:  #8B5CF6;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #F3F4F6;
+    color: var(--dark);
+    line-height: 1.6;
+  }
+
+  /* ── Page Wrapper ── */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto 20px;
+    background: var(--white);
+    position: relative;
+    overflow: hidden;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  /* ═══════════════════════════════════════
+     COVER PAGE
+  ═══════════════════════════════════════ */
+  .cover {
+    background: linear-gradient(145deg, #1A0A10 0%, #3D1025 40%, #DA1B61 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 297mm;
+    text-align: center;
+    padding: 60px 50px;
+    position: relative;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  .cover::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; left: -60px;
+    width: 350px; height: 350px;
+    border-radius: 50%;
+    background: rgba(255,140,66,0.12);
+  }
+
+  .cover-badge {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 50px;
+    color: #FFD1E3;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 8px 22px;
+    margin-bottom: 36px;
+  }
+
+  .cover-logo {
+    font-size: 90px;
+    margin-bottom: 16px;
+    filter: drop-shadow(0 8px 24px rgba(218,27,97,0.5));
+  }
+
+  .cover-title {
+    font-size: 72px;
+    font-weight: 900;
+    color: var(--white);
+    letter-spacing: -2px;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .cover-title span { color: var(--pink-l); }
+
+  .cover-tagline {
+    font-size: 20px;
+    color: rgba(255,255,255,0.7);
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    margin-bottom: 48px;
+    font-style: italic;
+  }
+
+  .cover-pills {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 60px;
+  }
+  .pill {
+    background: rgba(255,255,255,0.13);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 24px;
+    color: var(--white);
+    font-size: 13px;
+    font-weight: 500;
+    padding: 8px 18px;
+  }
+
+  .cover-divider {
+    width: 60px;
+    height: 3px;
+    background: linear-gradient(90deg, var(--pink-l), var(--accent));
+    border-radius: 2px;
+    margin: 0 auto 24px;
+  }
+
+  .cover-meta {
+    font-size: 13px;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 1px;
+  }
+
+  /* ═══════════════════════════════════════
+     SECTION HEADER (re-usable)
+  ═══════════════════════════════════════ */
+  .section-header {
+    background: linear-gradient(135deg, var(--pink) 0%, var(--pink-d) 100%);
+    padding: 32px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .section-header::after {
+    content: '';
+    position: absolute;
+    right: -40px; top: -40px;
+    width: 180px; height: 180px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .section-number {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 4px;
+  }
+  .section-title {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--white);
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+  }
+  .section-title span { color: #FFD1E3; }
+  .section-subtitle {
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .section-body {
+    padding: 36px 48px;
+  }
+
+  /* ═══════════════════════════════════════
+     CARDS & COMPONENTS
+  ═══════════════════════════════════════ */
+  .card-grid {
+    display: grid;
+    gap: 18px;
+  }
+  .card-grid-2 { grid-template-columns: 1fr 1fr; }
+  .card-grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+  .card {
+    background: var(--light);
+    border-radius: 14px;
+    padding: 22px;
+    border: 1px solid #E5E7EB;
+    position: relative;
+    overflow: hidden;
+  }
+  .card-accent-bar {
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px; height: 100%;
+    background: linear-gradient(180deg, var(--pink), var(--pink-l));
+    border-radius: 0;
+  }
+  .card.bar { padding-left: 26px; }
+
+  .card-icon {
+    font-size: 28px;
+    margin-bottom: 10px;
+    display: block;
+  }
+  .card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 6px;
+  }
+  .card-text {
+    font-size: 13px;
+    color: var(--slate);
+    line-height: 1.6;
+  }
+
+  /* highlight card */
+  .card-pink {
+    background: linear-gradient(135deg, var(--pink-xl) 0%, #FFD1E3 100%);
+    border: 1px solid #F5688B;
+  }
+  .card-dark {
+    background: linear-gradient(135deg, #1A0A10 0%, #3D1025 100%);
+    color: var(--white);
+    border: none;
+  }
+  .card-dark .card-title { color: var(--white); }
+  .card-dark .card-text  { color: rgba(255,255,255,0.7); }
+
+  /* ── Stat boxes ── */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .stat {
+    background: linear-gradient(135deg, var(--pink) 0%, var(--pink-d) 100%);
+    border-radius: 14px;
+    padding: 20px 16px;
+    text-align: center;
+    color: var(--white);
+  }
+  .stat-num {
+    font-size: 32px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    opacity: 0.8;
+  }
+
+  /* ── Tech Badges ── */
+  .tech-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .tech-badge {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: var(--light);
+    border: 1.5px solid #E5E7EB;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--dark);
+  }
+  .tech-badge .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ── Flow diagram ── */
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin: 20px 0;
+  }
+  .flow-step {
+    background: var(--pink-xl);
+    border: 2px solid var(--pink-l);
+    border-radius: 10px;
+    padding: 10px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--pink-d);
+    text-align: center;
+    min-width: 90px;
+  }
+  .flow-arrow {
+    font-size: 20px;
+    color: var(--pink);
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+  .flow-step.active {
+    background: linear-gradient(135deg, var(--pink), var(--pink-d));
+    border-color: var(--pink-d);
+    color: var(--white);
+  }
+
+  /* ── Architecture diagram ── */
+  .arch-box {
+    background: var(--light);
+    border: 1.5px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .arch-badge {
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .arch-label { font-size: 13px; font-weight: 600; color: var(--dark); }
+  .arch-port  { font-size: 11px; color: var(--slate); margin-left: auto; font-family: monospace; }
+
+  /* ── Timeline ── */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 10px; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--pink), var(--pink-l));
+    border-radius: 1px;
+  }
+  .tl-item {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  .tl-dot {
+    position: absolute;
+    left: -23px; top: 4px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--pink);
+    border: 3px solid var(--white);
+    box-shadow: 0 0 0 2px var(--pink);
+  }
+  .tl-phase {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--pink);
+    margin-bottom: 2px;
+  }
+  .tl-title { font-size: 14px; font-weight: 700; color: var(--dark); margin-bottom: 4px; }
+  .tl-text  { font-size: 12px; color: var(--slate); }
+
+  /* ── Role cards ── */
+  .role-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    background: var(--light);
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 12px;
+  }
+  .role-emoji { font-size: 32px; flex-shrink: 0; }
+  .role-name { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .role-desc { font-size: 12px; color: var(--slate); }
+  .role-list { margin-top: 6px; padding-left: 14px; }
+  .role-list li { font-size: 12px; color: var(--slate); margin-bottom: 2px; }
+
+  /* ── Impact numbers ── */
+  .impact-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .impact-card {
+    border-radius: 14px;
+    padding: 22px;
+    text-align: center;
+    color: var(--white);
+  }
+  .impact-num  { font-size: 36px; font-weight: 900; line-height: 1; }
+  .impact-unit { font-size: 16px; font-weight: 700; }
+  .impact-text { font-size: 12px; opacity: 0.85; margin-top: 4px; }
+
+  /* ── Footer bar ── */
+  .footer-bar {
+    background: linear-gradient(90deg, #1A0A10, var(--pink));
+    height: 8px;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+  }
+  .page-num {
+    position: absolute;
+    bottom: 18px; right: 48px;
+    font-size: 11px;
+    color: #9CA3AF;
+    letter-spacing: 1px;
+  }
+
+  /* ── Section divider ── */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, var(--pink), transparent);
+    margin: 24px 0;
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--dark);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  h3 .h3-bar {
+    display: inline-block;
+    width: 4px; height: 16px;
+    background: var(--pink);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  p { font-size: 13.5px; color: var(--slate); line-height: 1.75; }
+
+  ul.styled { padding-left: 0; list-style: none; }
+  ul.styled li {
+    font-size: 13px;
+    color: var(--slate);
+    padding: 5px 0 5px 20px;
+    position: relative;
+    line-height: 1.5;
+  }
+  ul.styled li::before {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    color: var(--pink);
+    font-size: 12px;
+  }
+
+  /* ── Print / PDF styles ── */
+  @media print {
+    body { background: white; }
+    .page {
+      margin: 0;
+      page-break-after: always;
+      break-after: page;
+      box-shadow: none;
+    }
+    @page { margin: 0; size: A4; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║              PAGE 1 — COVER             ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<div class="page">
+  <div class="cover">
+    <div class="cover-badge">🎓 Jury Presentation — 2026</div>
+    <div class="cover-logo">🎂</div>
+    <div class="cover-title">Ma<span>Cake</span></div>
+    <div class="cover-tagline">The Homemade Cake Marketplace of Tomorrow</div>
+
+    <div class="cover-pills">
+      <div class="pill">🏪 Multi-sided Marketplace</div>
+      <div class="pill">📱 React Native · Expo</div>
+      <div class="pill">⚙️ NestJS Microservices</div>
+      <div class="pill">💳 Stripe Payments</div>
+      <div class="pill">🗺️ Live Delivery Tracking</div>
+      <div class="pill">🤝 InDrive-Style Pricing</div>
+    </div>
+
+    <div class="cover-divider"></div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;width:100%;max-width:400px;margin-bottom:48px;">
+      <div style="text-align:center;">
+        <div style="font-size:28px;font-weight:900;color:#FFD1E3;">3</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;">User Roles</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:28px;font-weight:900;color:#FFD1E3;">6</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;">Microservices</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:28px;font-weight:900;color:#FFD1E3;">∞</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;">Possibilities</div>
+      </div>
+    </div>
+
+    <div class="cover-meta">Team MaCake · Full-Stack Project · 2025–2026</div>
+  </div>
+</div>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║           PAGE 2 — INTRODUCTION         ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">01 — Introduction</div>
+    <div class="section-title">What is <span>MaCake</span>?</div>
+    <div class="section-subtitle">Connecting bakers, clients & delivery drivers in one seamless ecosystem</div>
+  </div>
+
+  <div class="section-body">
+    <p style="font-size:14.5px;margin-bottom:24px;">
+      <strong>MaCake</strong> is a mobile-first, multi-sided marketplace that connects passionate home bakers
+      (<em>Patissières</em>) with customers who crave authentic, handcrafted cakes — and delivery drivers
+      (<em>Livreurs</em>) who bring those sweet creations right to the door. Think of it as the
+      <strong>Uber Eats of homemade pastries</strong>, with a unique InDrive-inspired pricing model
+      for delivery negotiations.
+    </p>
+
+    <div class="divider"></div>
+
+    <h3><span class="h3-bar"></span>Three Actors, One Platform</h3>
+    <div class="role-card">
+      <div class="role-emoji">🛒</div>
+      <div>
+        <div class="role-name" style="color:var(--blue);">Client</div>
+        <div class="role-desc">Browse handmade cake catalogs, customize orders (colors, filling, message), pay securely via Stripe, and track delivery in real time.</div>
+        <ul class="role-list">
+          <li>Filter & search by category, price, rating</li>
+          <li>Fully personalized order customization</li>
+          <li>Live order status & real-time notifications</li>
+        </ul>
+      </div>
+    </div>
+    <div class="role-card">
+      <div class="role-emoji">👩‍🍳</div>
+      <div>
+        <div class="role-name" style="color:var(--pink);">Patissière (Baker)</div>
+        <div class="role-desc">Showcase your creations, manage product listings, accept or refuse orders, and build a following of loyal customers.</div>
+        <ul class="role-list">
+          <li>Product catalog with photos, ingredients & pricing</li>
+          <li>Order acceptance & preparation workflow</li>
+          <li>Ratings & follower system to build reputation</li>
+        </ul>
+      </div>
+    </div>
+    <div class="role-card">
+      <div class="role-emoji">🛵</div>
+      <div>
+        <div class="role-name" style="color:var(--green);">Livreur (Delivery Driver)</div>
+        <div class="role-desc">Browse available delivery orders on an interactive map, propose a delivery price, and get paid upon completion.</div>
+        <ul class="role-list">
+          <li>Map-based workspace (OpenStreetMap)</li>
+          <li>Bid on delivery jobs with custom price proposals</li>
+          <li>Earnings tracked through wallet system</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3><span class="h3-bar"></span>Order Lifecycle</h3>
+    <div class="flow">
+      <div class="flow-step">🛒 Pending</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step active">✅ Accepted</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">👩‍🍳 Preparing</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">📦 Ready</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">🛵 Delivering</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step active">🎉 Delivered</div>
+    </div>
+    <p style="text-align:center;font-size:12px;margin-top:8px;">Every step emits real-time WebSocket events — clients are always in the loop.</p>
+  </div>
+
+  <div class="footer-bar"></div>
+  <div class="page-num">02</div>
+</div>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║         PAGE 3 — SOCIAL IMPACT          ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">02 — Impact</div>
+    <div class="section-title">Social &amp; <span>Economic</span> Impact</div>
+    <div class="section-subtitle">Empowering communities through the passion economy</div>
+  </div>
+
+  <div class="section-body">
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat-num">💰</div>
+        <div class="stat-label">Income for bakers</div>
+      </div>
+      <div class="stat" style="background:linear-gradient(135deg,var(--accent),#E05A00);">
+        <div class="stat-num">🕒</div>
+        <div class="stat-label">Flexible delivery jobs</div>
+      </div>
+      <div class="stat" style="background:linear-gradient(135deg,var(--green),#058C5A);">
+        <div class="stat-num">🌱</div>
+        <div class="stat-label">Local food economy</div>
+      </div>
+    </div>
+
+    <div class="card-grid card-grid-2" style="margin-bottom:20px;">
+      <div class="card bar">
+        <div class="card-accent-bar"></div>
+        <span class="card-icon">👩‍🍳</span>
+        <div class="card-title">Empowering Home Bakers</div>
+        <div class="card-text">
+          MaCake gives talented home bakers a professional platform to monetize their passion without
+          needing a physical shop. A single smartphone is enough to launch a pastry business,
+          build a customer base, and earn a sustainable income — democratizing entrepreneurship.
+        </div>
+      </div>
+      <div class="card bar" style="border-left-color:var(--accent);--card-color:var(--accent);">
+        <div class="card-accent-bar" style="background:linear-gradient(180deg,var(--accent),#E05A00);"></div>
+        <span class="card-icon">🛵</span>
+        <div class="card-title">Flexible Gig Work</div>
+        <div class="card-text">
+          Delivery drivers choose their hours and negotiate their own price for each job — inspired by
+          InDrive's model. This creates truly flexible freelance delivery jobs accessible to anyone
+          with a motorbike and a smartphone.
+        </div>
+      </div>
+      <div class="card bar">
+        <div class="card-accent-bar" style="background:linear-gradient(180deg,var(--green),#058C5A);"></div>
+        <span class="card-icon">🏘️</span>
+        <div class="card-title">Supporting Local Economies</div>
+        <div class="card-text">
+          By connecting buyers and sellers within the same city or neighborhood, MaCake keeps
+          money circulating locally. It promotes short supply chains, reduces food miles,
+          and strengthens community bonds through shared culinary culture.
+        </div>
+      </div>
+      <div class="card bar">
+        <div class="card-accent-bar" style="background:linear-gradient(180deg,var(--purple),#6D28D9);"></div>
+        <span class="card-icon">🌟</span>
+        <div class="card-title">Cultural Preservation</div>
+        <div class="card-text">
+          Traditional homemade recipes — including local Moroccan pastries — find a modern
+          digital showcase. MaCake bridges generations, helping artisan bakers pass on culinary
+          heritage while thriving in the digital economy.
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3><span class="h3-bar"></span>Technological Impact</h3>
+    <div class="card-grid card-grid-2">
+      <div class="card card-dark">
+        <span class="card-icon">📱</span>
+        <div class="card-title">Zero-Friction Mobile Access</div>
+        <div class="card-text">React Native + Expo delivers a native-quality experience on both iOS and Android from a single codebase — lowering the barrier for users with different devices.</div>
+      </div>
+      <div class="card card-dark">
+        <span class="card-icon">⚡</span>
+        <div class="card-title">Real-Time Everything</div>
+        <div class="card-text">WebSocket notifications powered by Socket.io mean every actor — client, baker, driver — stays perfectly synchronized with live order and delivery events.</div>
+      </div>
+      <div class="card card-dark">
+        <span class="card-icon">🔒</span>
+        <div class="card-title">Secure by Design</div>
+        <div class="card-text">JWT authentication with automatic token refresh, role-based access control, and rate limiting (100 req/min) protect every user's data and transaction.</div>
+      </div>
+      <div class="card card-dark">
+        <span class="card-icon">📈</span>
+        <div class="card-title">Horizontally Scalable</div>
+        <div class="card-text">Microservices architecture means each service can be independently scaled to handle traffic spikes — ensuring the platform grows with demand.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bar"></div>
+  <div class="page-num">03</div>
+</div>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║       PAGE 4 — TECH STACK               ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">03 — Technology</div>
+    <div class="section-title">Algorithms &amp; <span>Technologies</span></div>
+    <div class="section-subtitle">A modern, production-grade full-stack platform</div>
+  </div>
+
+  <div class="section-body">
+
+    <h3><span class="h3-bar"></span>Backend — Microservices Architecture</h3>
+    <p style="margin-bottom:16px;">
+      The backend is split into <strong>6 independent NestJS microservices</strong>, each with its own
+      MongoDB database, communicating via <strong>TCP (NestJS Transport)</strong> through an API Gateway.
+      This ensures full separation of concerns and independent deployability.
+    </p>
+
+    <div style="margin-bottom:20px;">
+      <div class="arch-box">
+        <span style="font-size:20px;">🌐</span>
+        <div class="arch-badge" style="background:#1A0A10;color:white;">Gateway</div>
+        <div class="arch-label">API Gateway — JWT Auth, Rate Limiting, WebSocket Hub, TCP Proxy</div>
+        <div class="arch-port">:3000</div>
+      </div>
+      <div class="arch-box">
+        <span style="font-size:20px;">🔐</span>
+        <div class="arch-badge" style="background:#3B82F6;color:white;">Auth</div>
+        <div class="arch-label">Authentication · bcrypt · JWT · MinIO photo uploads · User profiles</div>
+        <div class="arch-port">:3001</div>
+      </div>
+      <div class="arch-box">
+        <span style="font-size:20px;">🎂</span>
+        <div class="arch-badge" style="background:#DA1B61;color:white;">Catalog</div>
+        <div class="arch-label">Product listings · Categories · Ingredient management · Image storage</div>
+        <div class="arch-port">:3002</div>
+      </div>
+      <div class="arch-box">
+        <span style="font-size:20px;">📦</span>
+        <div class="arch-badge" style="background:#F59E0B;color:white;">Orders</div>
+        <div class="arch-label">Order lifecycle · Estimation (delivery bidding) · Status management</div>
+        <div class="arch-port">:3003</div>
+      </div>
+      <div class="arch-box">
+        <span style="font-size:20px;">💳</span>
+        <div class="arch-badge" style="background:#10B981;color:white;">Payment</div>
+        <div class="arch-label">Stripe integration · Wallet top-up · Refunds · Webhooks · MAD currency</div>
+        <div class="arch-port">:3005</div>
+      </div>
+      <div class="arch-box">
+        <span style="font-size:20px;">⭐</span>
+        <div class="arch-badge" style="background:#8B5CF6;color:white;">Notation</div>
+        <div class="arch-label">Ratings &amp; reviews · Likes · Followers · Profile interactions</div>
+        <div class="arch-port">:3006</div>
+      </div>
+    </div>
+
+    <h3><span class="h3-bar"></span>Key Algorithms &amp; Patterns</h3>
+    <div class="card-grid card-grid-2" style="margin-bottom:20px;">
+      <div class="card bar">
+        <div class="card-accent-bar"></div>
+        <div class="card-title">🔑 JWT Token Refresh</div>
+        <div class="card-text">Silent token rotation on 401 responses via Axios interceptors. Access tokens are short-lived; refresh tokens persist securely — balancing security and UX.</div>
+      </div>
+      <div class="card bar">
+        <div class="card-accent-bar" style="background:linear-gradient(180deg,var(--accent),#E05A00);"></div>
+        <div class="card-title">🤝 InDrive Estimation Algorithm</div>
+        <div class="card-text">Delivery drivers submit price proposals for orders. The client or system confirms the best bid. This market-based pricing ensures fair compensation for drivers.</div>
+      </div>
+      <div class="card bar">
+        <div class="card-accent-bar" style="background:linear-gradient(180deg,var(--green),#058C5A);"></div>
+        <div class="card-title">📡 Event-Driven Updates</div>
+        <div class="card-text">RabbitMQ handles async events between services (e.g., order completion triggers rating prompt). WebSocket broadcasts real-time status changes to all connected clients.</div>
+      </div>
+      <div class="card bar">
+        <div class="card-accent-bar" style="background:linear-gradient(180deg,var(--purple),#6D28D9);"></div>
+        <div class="card-title">⭐ Batch Rating Aggregation</div>
+        <div class="card-text">The notation service computes average star ratings per product and per baker using batch queries — efficiently displayed in catalog listings without N+1 calls.</div>
+      </div>
+    </div>
+
+    <h3><span class="h3-bar"></span>Full Technology Stack</h3>
+    <div class="tech-grid">
+      <div class="tech-badge"><span class="dot" style="background:#E0234E;"></span>NestJS</div>
+      <div class="tech-badge"><span class="dot" style="background:#61DAFB;"></span>React Native</div>
+      <div class="tech-badge"><span class="dot" style="background:#000020;"></span>Expo v54</div>
+      <div class="tech-badge"><span class="dot" style="background:#764ABC;"></span>Redux Toolkit</div>
+      <div class="tech-badge"><span class="dot" style="background:#47A248;"></span>MongoDB</div>
+      <div class="tech-badge"><span class="dot" style="background:#FF6600;"></span>RabbitMQ</div>
+      <div class="tech-badge"><span class="dot" style="background:#DC382D;"></span>Redis</div>
+      <div class="tech-badge"><span class="dot" style="background:#DA1B61;"></span>Stripe</div>
+      <div class="tech-badge"><span class="dot" style="background:#C72C41;"></span>MinIO (S3)</div>
+      <div class="tech-badge"><span class="dot" style="background:#010101;"></span>Socket.io</div>
+      <div class="tech-badge"><span class="dot" style="background:#06B6D4;"></span>NativeWind</div>
+      <div class="tech-badge"><span class="dot" style="background:#38BDF8;"></span>Axios + JWT</div>
+      <div class="tech-badge"><span class="dot" style="background:#7B8B9A;"></span>OSM Maps</div>
+      <div class="tech-badge"><span class="dot" style="background:#2496ED;"></span>Docker</div>
+      <div class="tech-badge"><span class="dot" style="background:#00C58E;"></span>Lottie Animations</div>
+    </div>
+  </div>
+
+  <div class="footer-bar"></div>
+  <div class="page-num">04</div>
+</div>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║       PAGE 5 — STRATEGY & METHOD        ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">04 — Methodology</div>
+    <div class="section-title">Strategy &amp; <span>Methodology</span></div>
+    <div class="section-subtitle">How we designed, built, and iterated MaCake</div>
+  </div>
+
+  <div class="section-body">
+    <h3><span class="h3-bar"></span>Development Approach</h3>
+    <p style="margin-bottom:20px;">
+      MaCake was built using an <strong>Agile-inspired iterative approach</strong> — starting with core
+      domain modeling, then progressively layering services, integrations, and polish. Architecture
+      decisions prioritized <em>separation of concerns</em>, <em>scalability</em>, and
+      <em>developer experience</em>.
+    </p>
+
+    <div class="card-grid card-grid-2" style="margin-bottom:24px;">
+      <div class="card card-pink">
+        <span class="card-icon">🎯</span>
+        <div class="card-title">Domain-Driven Design</div>
+        <div class="card-text">Each microservice owns exactly one bounded context: Auth owns identity, Catalog owns products, Orders owns the full transaction lifecycle. Clean boundaries prevent coupling.</div>
+      </div>
+      <div class="card card-pink">
+        <span class="card-icon">🔄</span>
+        <div class="card-title">API-First Development</div>
+        <div class="card-text">All services were designed contract-first. The API Gateway enforces strict routing rules (role-based guards, JWT validation) before any request reaches a microservice.</div>
+      </div>
+    </div>
+
+    <h3><span class="h3-bar"></span>Project Timeline</h3>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-phase">Phase 1 — Foundation</div>
+        <div class="tl-title">Architecture Design &amp; Environment Setup</div>
+        <div class="tl-text">Defined microservice boundaries, set up Docker Compose with MongoDB, RabbitMQ, Redis, MinIO. Established gateway routing and TCP communication patterns.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-phase">Phase 2 — Core Services</div>
+        <div class="tl-title">Auth, Catalog &amp; Order Services</div>
+        <div class="tl-text">Built user registration/login with JWT, product catalog CRUD with image uploads to MinIO, and the complete order lifecycle with status state machine.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-phase">Phase 3 — Platform Features</div>
+        <div class="tl-title">Payments, Estimations &amp; Ratings</div>
+        <div class="tl-text">Integrated Stripe for secure payments in MAD currency, implemented the InDrive-style delivery price negotiation system, and built the ratings/likes/followers social layer.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot"></div>
+        <div class="tl-phase">Phase 4 — Frontend</div>
+        <div class="tl-title">React Native Mobile App</div>
+        <div class="tl-text">Built role-aware screens for all three user types using Expo Router, Redux Toolkit for state management, Lottie animations for delight, and OSM maps for delivery workspace.</div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-dot" style="background:var(--green);box-shadow:0 0 0 2px var(--green);"></div>
+        <div class="tl-phase" style="color:var(--green);">Phase 5 — Polish &amp; Optimization</div>
+        <div class="tl-title">Performance, Security &amp; UX Refinement</div>
+        <div class="tl-text">Added rate limiting, solved rating edge cases, optimized error handling for payments, real-time WebSocket event delivery, and app-wide visual polish with NativeWind.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3><span class="h3-bar"></span>Infrastructure Strategy</h3>
+    <div class="card-grid card-grid-3">
+      <div class="card" style="text-align:center;padding:18px 12px;">
+        <span class="card-icon">🐳</span>
+        <div class="card-title">Docker Compose</div>
+        <div class="card-text">All services run in containers. One command to spin up the entire platform locally.</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px 12px;">
+        <span class="card-icon">🗄️</span>
+        <div class="card-title">DB per Service</div>
+        <div class="card-text">Each microservice has its own isolated MongoDB database — no shared state, no data coupling.</div>
+      </div>
+      <div class="card" style="text-align:center;padding:18px 12px;">
+        <span class="card-icon">📬</span>
+        <div class="card-title">Message Queue</div>
+        <div class="card-text">RabbitMQ decouples services. Events flow asynchronously — a service failure won't block others.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bar"></div>
+  <div class="page-num">05</div>
+</div>
+
+<!-- ╔══════════════════════════════════════════╗ -->
+<!-- ║            PAGE 6 — CLOSING             ║ -->
+<!-- ╚══════════════════════════════════════════╝ -->
+<div class="page">
+  <div class="section-header">
+    <div class="section-number">05 — Vision</div>
+    <div class="section-title">The Future of <span>MaCake</span></div>
+    <div class="section-subtitle">Where we go from here</div>
+  </div>
+
+  <div class="section-body">
+
+    <div class="impact-grid" style="margin-bottom:24px;">
+      <div class="impact-card" style="background:linear-gradient(135deg,var(--pink),var(--pink-d));">
+        <div class="impact-num">🎂</div>
+        <div class="impact-unit">1 Platform</div>
+        <div class="impact-text">That serves bakers, clients AND drivers — a complete ecosystem built from scratch</div>
+      </div>
+      <div class="impact-card" style="background:linear-gradient(135deg,var(--accent),#C75000);">
+        <div class="impact-num">⚡</div>
+        <div class="impact-unit">Real-Time</div>
+        <div class="impact-text">Live order tracking, instant notifications, and dynamic delivery pricing in one app</div>
+      </div>
+      <div class="impact-card" style="background:linear-gradient(135deg,var(--green),#058C5A);">
+        <div class="impact-num">🌍</div>
+        <div class="impact-unit">Local First</div>
+        <div class="impact-text">Designed to scale city by city, keeping economic benefits in local communities</div>
+      </div>
+      <div class="impact-card" style="background:linear-gradient(135deg,var(--purple),#5B21B6);">
+        <div class="impact-num">🔒</div>
+        <div class="impact-unit">Secure</div>
+        <div class="impact-text">Enterprise-grade security: JWT, bcrypt, Stripe PCI compliance, and rate limiting</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <h3><span class="h3-bar"></span>Roadmap — What's Next</h3>
+    <div class="card-grid card-grid-2" style="margin-bottom:24px;">
+      <div class="card bar">
+        <div class="card-accent-bar"></div>
+        <div class="card-title">🤖 AI-Powered Recommendations</div>
+        <div class="card-text">Personalized product suggestions based on order history, liked items, and browsing behavior — increasing discovery and conversion rates.</div>
+      </div>
+      <div class="card bar">
+        <div class="card-accent-bar" style="background:linear-gradient(180deg,var(--accent),#E05A00);"></div>
+        <div class="card-title">📊 Baker Analytics Dashboard</div>
+        <div class="card-text">Real-time sales analytics, customer insights, and demand forecasting to help patissières grow their businesses with data.</div>
+      </div>
+      <div class="card bar">
+        <div class="card-accent-bar" style="background:linear-gradient(180deg,var(--green),#058C5A);"></div>
+        <div class="card-title">💬 In-App Chat</div>
+        <div class="card-text">Direct messaging between clients and bakers for order customization, and between drivers and clients during delivery.</div>
+      </div>
+      <div class="card bar">
+        <div class="card-accent-bar" style="background:linear-gradient(180deg,var(--purple),#6D28D9);"></div>
+        <div class="card-title">🌐 Multi-City Expansion</div>
+        <div class="card-text">Geo-fenced city modules with localized categories, currencies, and delivery zones to expand MaCake across Morocco and beyond.</div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Closing quote card -->
+    <div style="background:linear-gradient(135deg,#1A0A10 0%,#3D1025 60%,#DA1B61 100%);border-radius:18px;padding:36px;text-align:center;margin-bottom:10px;">
+      <div style="font-size:40px;margin-bottom:12px;">🎂</div>
+      <div style="font-size:22px;font-weight:800;color:white;margin-bottom:8px;letter-spacing:-0.5px;">
+        "More than an app — a community."
+      </div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.65);max-width:400px;margin:0 auto;">
+        MaCake proves that technology, when built with empathy and purpose,
+        can transform a simple passion for baking into a thriving digital economy.
+      </div>
+      <div style="margin-top:24px;display:flex;justify-content:center;gap:14px;flex-wrap:wrap;">
+        <div class="pill">📱 React Native</div>
+        <div class="pill">⚙️ NestJS</div>
+        <div class="pill">☁️ Microservices</div>
+        <div class="pill">🎂 MaCake 2026</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-bar"></div>
+  <div class="page-num">06</div>
+</div>
+
+</body>
+</html>

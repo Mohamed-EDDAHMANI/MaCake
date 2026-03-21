@@ -14,6 +14,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { winstonConfig } from './common/logger/logger.config';
 import { OrderEventsGateway } from './gateways/order-events.gateway';
+import { RatingEventsGateway } from './gateways/rating-events.gateway';
+import { PaymentEventsGateway } from './gateways/payment-events.gateway';
 
 @Module({
   imports: [
@@ -50,6 +52,8 @@ import { OrderEventsGateway } from './gateways/order-events.gateway';
     GatewayForwardService,
     ErrorHandlerService,
     OrderEventsGateway,
+    RatingEventsGateway,
+    PaymentEventsGateway,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard, // Global rate limit

@@ -52,6 +52,7 @@ import {
 } from "@/store/features/estimation";
 import { getProfileById } from "@/store/features/auth/authApi";
 import { getOrderSocket } from "@/lib/order-socket";
+import { getPaymentSocket, type EstimationPaidPayload } from "@/lib/payment-socket";
 import { fetchProductByIdApi } from "@/store/features/catalog/catalogApi";
 import { EstimationCreateModal } from "@/components/order/EstimationCreateModal";
 
@@ -121,6 +122,7 @@ function BottomOrdersSheet({
   activeTab,
   setActiveTab,
   orders,
+  tabCounts,
   selectedOrderIdForMap,
   onCardPressForMap,
   onViewOrder,
@@ -134,6 +136,7 @@ function BottomOrdersSheet({
   activeTab: TabKey;
   setActiveTab: (t: TabKey) => void;
   orders: WorkspaceOrderItem[];
+  tabCounts: Record<TabKey, number>;
   selectedOrderIdForMap: string | null;
   onCardPressForMap?: (orderId: string) => void;
   onViewOrder?: (orderId: string) => void;
@@ -198,29 +201,39 @@ function BottomOrdersSheet({
         ) : null}
         <View style={styles.bottomSheetInner}>
         <View style={styles.dragHandle} />
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsRow}
-          style={styles.tabsScroll}
-        >
-          {(["Available", "Accepted", "Estimated", "Historic"] as TabKey[]).map((tab) => (
-            <Pressable
-              key={tab}
-              style={[styles.tab, activeTab === tab && styles.tabActive]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <MaterialIcons
-                name={TAB_ICONS[tab]}
-                size={16}
-                color={activeTab === tab ? PRIMARY : SLATE_400}
-              />
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]} numberOfLines={1}>
-                {tab}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+        <View style={styles.tabsContainer}>
+          <View style={styles.tabsTrack}>
+            {(["Available", "Accepted", "Estimated", "Historic"] as TabKey[]).map((tab) => {
+              const isActive = activeTab === tab;
+              const count = tabCounts[tab];
+              return (
+                <Pressable
+                  key={tab}
+                  style={[styles.tab, isActive && styles.tabActive]}
+                  onPress={() => setActiveTab(tab)}
+                >
+                  <View style={styles.tabIconWrap}>
+                    <MaterialIcons
+                      name={TAB_ICONS[tab]}
+                      size={16}
+                      color={isActive ? "#fff" : SLATE_500}
+                    />
+                    {count > 0 && (
+                      <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
+                        <Text style={[styles.tabBadgeText, isActive && { color: PRIMARY }]}>
+                          {count > 99 ? "99+" : count}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={[styles.tabText, isActive && styles.tabTextActive]} numberOfLines={1}>
+                    {tab}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
         <View style={styles.ordersScrollWrap}>
           <ScrollView
             style={styles.ordersScroll}
@@ -672,6 +685,21 @@ export default function WorkspaceScreen() {
     };
   }, [loadAvailable, loadAccepted, loadEstimated, loadHistoric]);
 
+  const userId = user?.id ?? "";
+  useEffect(() => {
+    const socket = getPaymentSocket();
+    const handler = (payload: EstimationPaidPayload) => {
+      // Only reload if the event is for this delivery driver
+      if (payload.deliveryUserId && payload.deliveryUserId !== userId) return;
+      loadAccepted();
+      loadEstimated();
+    };
+    socket.on("estimation.paid", handler);
+    return () => {
+      socket.off("estimation.paid", handler);
+    };
+  }, [userId, loadAccepted, loadEstimated]);
+
   const userLat = userLocation?.lat ?? OSM_DEFAULT.lat;
   const userLng = userLocation?.lng ?? OSM_DEFAULT.lng;
   const mapMarkers = useMemo((): MapMarker[] => {
@@ -779,9 +807,41 @@ export default function WorkspaceScreen() {
     [profiles, userLocation, productTitles, productImages, user]
   );
 
+  // ── Tab exclusivity logic ──────────────────────────────────────────────────
+  // Orders this delivery already made a counter-offer for
+  const myEstimatedOrderIds = useMemo(
+    () => new Set(estimatedList.map((e) => e.order.id)),
+    [estimatedList]
+  );
+
+  // Orders already accepted by ANY delivery (status changed past "pending")
+  const TERMINAL_ORDER_STATUSES = new Set(["delivering", "delivered", "refused"]);
+
+  // Available: client estimations NOT already estimated by this delivery
+  const filteredAvailableList = useMemo(
+    () => availableList.filter((e) => !myEstimatedOrderIds.has(e.order.id)),
+    [availableList, myEstimatedOrderIds]
+  );
+
+  // Estimated: this delivery's pending offers for orders still open (not picked up by another)
+  const filteredEstimatedList = useMemo(
+    () => estimatedList.filter((e) => !TERMINAL_ORDER_STATUSES.has(e.order.status)),
+    [estimatedList]
+  );
+
+  const tabCounts = useMemo<Record<TabKey, number>>(
+    () => ({
+      Available: filteredAvailableList.length,
+      Accepted: acceptedList.length,
+      Estimated: filteredEstimatedList.length,
+      Historic: historicList.length,
+    }),
+    [filteredAvailableList, acceptedList, filteredEstimatedList, historicList]
+  );
+
   const availableOrders: WorkspaceOrderItem[] = useMemo(
-    () => availableList.map((entry) => buildOrderItem(entry, {})),
-    [availableList, buildOrderItem]
+    () => filteredAvailableList.map((entry) => buildOrderItem(entry, {})),
+    [filteredAvailableList, buildOrderItem]
   );
 
   const acceptedOrders: WorkspaceOrderItem[] = useMemo(
@@ -790,8 +850,8 @@ export default function WorkspaceScreen() {
   );
 
   const estimatedOrders: WorkspaceOrderItem[] = useMemo(
-    () => estimatedList.map((entry) => buildOrderItem(entry, { estimationId: entry.estimation.id })),
-    [estimatedList, buildOrderItem]
+    () => filteredEstimatedList.map((entry) => buildOrderItem(entry, { estimationId: entry.estimation.id })),
+    [filteredEstimatedList, buildOrderItem]
   );
 
   const historicOrders: WorkspaceOrderItem[] = useMemo(
@@ -946,6 +1006,7 @@ export default function WorkspaceScreen() {
                   ? estimatedOrders
                   : historicOrders
           }
+          tabCounts={tabCounts}
           selectedOrderIdForMap={selectedOrderIdForMap}
           onCardPressForMap={handleCardPressForMap}
           onViewOrder={(id) => router.push(`/(main)/delivery-order/${id}` as any)}
@@ -957,7 +1018,11 @@ export default function WorkspaceScreen() {
             (activeTab === "Estimated" && estimatedLoading) ||
             (activeTab === "Historic" && historicLoading)
           }
-          floatingAddButtonVisible={!!(selectedOrderIdForMap && activeTab === "Available")}
+          floatingAddButtonVisible={!!(
+            selectedOrderIdForMap &&
+            activeTab === "Available" &&
+            filteredAvailableList.some(({ order }) => order.id === selectedOrderIdForMap)
+          )}
           onFloatingAddPress={() => selectedOrderIdForMap && setEstimationModalOrderId(selectedOrderIdForMap)}
         />
 
@@ -968,7 +1033,8 @@ export default function WorkspaceScreen() {
           onClose={() => setEstimationModalOrderId(null)}
           onSuccess={() => {
             setEstimationModalOrderId(null);
-            loadAvailable();
+            // Reload Estimated (new offer appears) + Accepted (in case auto-confirmed)
+            // Available is intentionally NOT reloaded — the new offer moves to Estimated via filter
             loadEstimated();
             loadAccepted();
           }}
@@ -1216,29 +1282,69 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
   },
-  tabsScroll: {
-    maxHeight: 44,
+  tabsContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(218,27,97,0.05)",
+    borderBottomColor: BORDER_SUBTLE,
   },
-  tabsRow: {
+  tabsTrack: {
     flexDirection: "row",
-    paddingHorizontal: 8,
-    alignItems: "stretch",
+    backgroundColor: SLATE_200,
+    borderRadius: 12,
+    padding: 3,
+    gap: 2,
   },
   tab: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    paddingVertical: 7,
+    paddingHorizontal: 4,
+    borderRadius: 9,
     gap: 4,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderBottomWidth: 2,
-    borderBottomColor: "transparent",
   },
-  tabActive: { borderBottomColor: PRIMARY },
-  tabText: { fontSize: 12, fontWeight: "600", color: SLATE_400 },
-  tabTextActive: { fontWeight: "700", color: PRIMARY },
+  tabActive: {
+    backgroundColor: PRIMARY,
+    shadowColor: PRIMARY,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tabIconWrap: {
+    position: "relative",
+  },
+  tabText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: SLATE_500,
+  },
+  tabTextActive: {
+    fontWeight: "700",
+    color: "#fff",
+  },
+  tabBadge: {
+    position: "absolute",
+    top: -5,
+    right: -8,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 999,
+    backgroundColor: SLATE_500,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 2,
+  },
+  tabBadgeActive: {
+    backgroundColor: "#fff",
+  },
+  tabBadgeText: {
+    fontSize: 8,
+    fontWeight: "800",
+    color: "#fff",
+  },
   ordersScroll: { flex: 1 },
   ordersScrollContent: { padding: 16, gap: 12 },
   ordersLoading: {

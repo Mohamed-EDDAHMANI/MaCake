@@ -18,7 +18,22 @@
       "Bash(grep -r \"\\\\.gitignore\\\\|env.example\" /c/Users/Youcode/Desktop/MaCake --include=.gitignore --include=*.example)",
       "Bash(xargs cat:*)",
       "Bash(grep -r process.env /c/Users/Youcode/Desktop/MaCake/payment-service/src /c/Users/Youcode/Desktop/MaCake/auth-service/src --include=*.ts)",
-      "Bash(grep -r \"as any\\\\|any as \" /c/Users/Youcode/Desktop/MaCake/payment-service/src /c/Users/Youcode/Desktop/MaCake/notation-service/src --include=*.ts)"
+      "Bash(grep -r \"as any\\\\|any as \" /c/Users/Youcode/Desktop/MaCake/payment-service/src /c/Users/Youcode/Desktop/MaCake/notation-service/src --include=*.ts)",
+      "Bash(ls:*)",
+      "WebSearch",
+      "Bash(find /c/Users/Youcode/Desktop/MaCake/front/android/app/src/main/res -type d -name mipmap*)",
+      "Bash(npm install:*)",
+      "Bash(npx react-native-make:*)",
+      "Bash(./node_modules/.bin/react-native-make set-icon:*)",
+      "Bash(npx react-native:*)",
+      "Bash(node:*)",
+      "Bash(for d:*)",
+      "Bash(do echo:*)",
+      "Read(//c/Users/Youcode/Desktop/MaCake/front/android/app/src/main/res/**)",
+      "Bash(done)",
+      "Bash(xargs grep:*)",
+      "Bash(grep:*)",
+      "Bash(find /c/Users/Youcode/Desktop/MaCake -type d -name *payment* -o -name *s5*)"
     ]
   }
 }

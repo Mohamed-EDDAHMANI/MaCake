@@ -1,20 +1,26 @@
 {
   "expo": {
-    "name": "front",
+    "name": "MaCake",
     "slug": "front",
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "front",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "icon": "./assets/images/MaCakeIcon.png",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "icon": "./assets/images/MaCakeIcon.png"
     },
     "android": {
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true,
-      "package": "com.anonymous.front"
+      "package": "com.anonymous.front",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/MaCakeIcon.png",
+        "backgroundColor": "#9A0F45"
+      }
     },
     "web": {
       "output": "static",

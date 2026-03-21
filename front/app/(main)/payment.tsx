@@ -19,6 +19,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { updateUser } from "@/store/features/auth/authSlice";
 import {
   confirmOrderStripePaymentApi,
+  confirmDeliveryStripePaymentApi,
   createOrderPaymentApi,
   createDeliveryPaymentApi,
 } from "@/store/features/payment/paymentApi";
@@ -60,7 +61,7 @@ export default function PaymentScreen() {
   const walletCanCover = walletShortfall <= 0;
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>(
-    isDeliveryPayment || walletCanCover ? "wallet" : "stripe"
+    walletCanCover ? "wallet" : "stripe"
   );
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -108,17 +109,12 @@ export default function PaymentScreen() {
 
   const handleStripeDirectPay = async () => {
     if (isProcessing) return;
-    if (isDeliveryPayment) {
-      setError("Delivery payment by card not supported yet. Use wallet.");
-      return;
-    }
     try {
       setError(null);
       setIsProcessing(true);
-      const intent = await createOrderPaymentApi({
-        orderId,
-        paymentMethod: "stripe_card",
-      });
+      const intent = isDeliveryPayment && estimationId
+        ? await createDeliveryPaymentApi({ estimationId, paymentMethod: "stripe_card" })
+        : await createOrderPaymentApi({ orderId, paymentMethod: "stripe_card" });
       const paymentIntentClientSecret = intent.paymentIntentClientSecret;
       const paymentIntentId = intent.paymentIntentId;
       if (!paymentIntentClientSecret || !paymentIntentId) {
@@ -149,7 +145,11 @@ export default function PaymentScreen() {
         throw new Error(presentResult.error.message);
       }
 
-      await confirmOrderStripePaymentApi(paymentIntentId);
+      if (isDeliveryPayment) {
+        await confirmDeliveryStripePaymentApi(paymentIntentId);
+      } else {
+        await confirmOrderStripePaymentApi(paymentIntentId);
+      }
 
       setShowSuccess(true);
       // Navigate back to order details after showing success briefly
@@ -249,32 +249,30 @@ export default function PaymentScreen() {
             ) : null}
           </View>
 
-          {!isDeliveryPayment ? (
-            <View>
-              <Text style={styles.sectionTitle}>Debit / Credit Card</Text>
-              <Pressable
-                style={[
-                  styles.paymentCard,
-                  selectedMethod === "stripe" ? styles.paymentCardSelected : styles.paymentCardUnselected,
-                ]}
-                onPress={() => {
-                  setSelectedMethod("stripe");
-                  setError(null);
-                }}
-              >
-                <View style={styles.paymentIcon}>
-                  <MaterialIcons name="credit-card" size={22} color={PRIMARY} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.paymentTitle}>Pay with Stripe</Text>
-                  <Text style={styles.paymentSub}>Secure card payment</Text>
-                </View>
-                <View style={styles.radioOuter}>
-                  {selectedMethod === "stripe" ? <View style={styles.radioInner} /> : null}
-                </View>
-              </Pressable>
-            </View>
-          ) : null}
+          <View>
+            <Text style={styles.sectionTitle}>Debit / Credit Card</Text>
+            <Pressable
+              style={[
+                styles.paymentCard,
+                selectedMethod === "stripe" ? styles.paymentCardSelected : styles.paymentCardUnselected,
+              ]}
+              onPress={() => {
+                setSelectedMethod("stripe");
+                setError(null);
+              }}
+            >
+              <View style={styles.paymentIcon}>
+                <MaterialIcons name="credit-card" size={22} color={PRIMARY} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.paymentTitle}>Pay with Stripe</Text>
+                <Text style={styles.paymentSub}>Secure card payment</Text>
+              </View>
+              <View style={styles.radioOuter}>
+                {selectedMethod === "stripe" ? <View style={styles.radioInner} /> : null}
+              </View>
+            </Pressable>
+          </View>
 
           <View style={styles.secureBadge}>
             <MaterialIcons name="verified-user" size={16} color="#047857" />

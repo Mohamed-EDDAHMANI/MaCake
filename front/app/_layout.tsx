@@ -4,7 +4,7 @@ import { View, StyleSheet } from "react-native";
 import { ThemeProvider, DefaultTheme } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { Provider } from "react-redux";
+import { Provider, useDispatch } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
 import "react-native-reanimated";
 import * as SplashScreen from "expo-splash-screen";
@@ -13,6 +13,22 @@ import { getStripeModuleSafe } from "@/lib/stripe-safe";
 import { store, persistor } from "@/store";
 import { AuthModalProvider } from "@/contexts/AuthModalContext";
 import AppSplashScreen from "@/components/common/app-splash-screen";
+import { getPaymentSocket, type LikeToggledPayload } from "@/lib/payment-socket";
+import { updateProductLike } from "@/store/features/catalog";
+
+/** Listens for like.toggled socket events and syncs Redux store across all screens. */
+function LikeSocketListener() {
+  const dispatch = useDispatch();
+  useEffect(() => {
+    const socket = getPaymentSocket();
+    const handler = (p: LikeToggledPayload) => {
+      dispatch(updateProductLike({ productId: p.productId, userId: null, liked: p.liked, count: p.count }));
+    };
+    socket.on("like.toggled", handler);
+    return () => { socket.off("like.toggled", handler); };
+  }, [dispatch]);
+  return null;
+}
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -68,6 +84,7 @@ export default function RootLayout() {
 
   return (
     <Provider store={store}>
+      <LikeSocketListener />
       {/* Render a stable navigation tree while rehydrating to avoid router rehydration edge-cases */}
       <PersistGate loading={content} persistor={persistor}>
         {content}

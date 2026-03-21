@@ -9,6 +9,7 @@ import {
   ApiResponse,
 } from '../common/interfaces/api-response.interface';
 import { OrderEventsGateway } from '../gateways/order-events.gateway';
+import { PaymentEventsGateway } from '../gateways/payment-events.gateway';
 
 @Controller()
 export class GatewayController {
@@ -18,6 +19,7 @@ export class GatewayController {
     private readonly forwardService: GatewayForwardService,
     private readonly errorHandler: ErrorHandlerService,
     private readonly orderEventsGateway: OrderEventsGateway,
+    private readonly paymentEventsGateway: PaymentEventsGateway,
   ) {}
 
   @All('health')
@@ -73,7 +75,7 @@ export class GatewayController {
             path,
           });
 
-      // Emit websocket event for order-related responses (service "s3" = orders-service)
+      // s3 (order-service): emit order.status.changed
       if (service === 's3' && body?.data) {
         const data = body.data as any;
         const emitForOrder = (order: any) => {
@@ -91,6 +93,67 @@ export class GatewayController {
           (data as any).data.forEach(emitForOrder);
         } else {
           emitForOrder(data);
+        }
+      }
+
+      // s5 (payment-service): emit wallet.changed, payment.confirmed, estimation.paid
+      if (service === 's5' && body?.data) {
+        const d = body.data as any;
+
+        // order payment confirmed → notify client
+        if (d?.payment?.orderId && d?.payment?.clientId && !d?.payment?.estimationId) {
+          this.paymentEventsGateway.emitPaymentConfirmed({
+            orderId: d.payment.orderId,
+            clientId: d.payment.clientId,
+            amount: d.payment.amount ?? 0,
+          });
+        }
+
+        // delivery payment released → notify delivery driver (estimation.paid)
+        if (d?.payment?.estimationId && d?.payment?.clientId && d?.payment?.status === 'released') {
+          this.paymentEventsGateway.emitEstimationPaid({
+            estimationId: d.payment.estimationId,
+            clientId: d.payment.clientId,
+            deliveryUserId: d.deliveryUserId ?? '',
+            amount: d.payment.amount ?? 0,
+          });
+          // wallet balance for delivery driver
+          if (d?.deliveryUserId && d?.deliveryNetAmount !== undefined) {
+            this.paymentEventsGateway.emitWalletChanged({
+              userId: d.deliveryUserId,
+              walletBalance: Number(d.deliveryNetAmount),
+            });
+          }
+        }
+
+        // wallet balance changes for client (order or delivery payment)
+        if (d?.walletBalance !== undefined && d?.payment?.clientId) {
+          this.paymentEventsGateway.emitWalletChanged({
+            userId: d.payment.clientId,
+            walletBalance: Number(d.walletBalance),
+          });
+        }
+
+        // wallet balance changes for patissiere (order payment)
+        if (d?.patissiereWalletBalance !== undefined && d?.patissiereId) {
+          this.paymentEventsGateway.emitWalletChanged({
+            userId: d.patissiereId,
+            walletBalance: Number(d.patissiereWalletBalance),
+          });
+        }
+      }
+
+      // s6 (notation-service): emit like.toggled
+      // Note: like service returns { liked, count } without productId — take it from request body
+      if (service === 's6' && body?.data) {
+        const d = body.data as any;
+        const productId = d?.productId ?? (payload as any)?.body?.productId;
+        if (productId && d?.liked !== undefined && d?.count !== undefined) {
+          this.paymentEventsGateway.emitLikeToggled({
+            productId,
+            liked: Boolean(d.liked),
+            count: Number(d.count),
+          });
         }
       }
 

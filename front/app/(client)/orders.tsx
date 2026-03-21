@@ -340,17 +340,30 @@ function PatissiereOrdersView() {
     loadTab(next);
   };
 
+  // Keep a ref to the current toPrepare list so the socket handler can check without stale closure
+  const toPrepareRef = useRef<OrderCardData[]>([]);
+  useEffect(() => { toPrepareRef.current = toPrepare; }, [toPrepare]);
+
   useEffect(() => {
     const socket = getOrderSocket();
     const handler = (payload: { orderId: string; status: OrderStatus }) => {
-      const update = (prev: OrderCardData[]) =>
-        prev.map((o) => o.id === payload.orderId ? { ...o, status: payload.status } : o);
-      setCreated(update);
-      setToPrepare(update);
+      // If the order is already in the list, just update its status
+      const exists = toPrepareRef.current.some((o) => o.id === payload.orderId);
+      if (exists) {
+        const update = (prev: OrderCardData[]) =>
+          prev.map((o) => o.id === payload.orderId ? { ...o, status: payload.status } : o);
+        setCreated(update);
+        setToPrepare(update);
+      } else {
+        // New order the patissiere hasn't loaded yet → force a fresh fetch
+        fetchedToPrepare.current = false;
+        fetchedCreated.current = false;
+        loadTab(tab);
+      }
     };
     socket.on("order.status.changed", handler);
     return () => { socket.off("order.status.changed", handler); };
-  }, []);
+  }, [loadTab, tab]);
 
   const loading = tab === "created" ? loadingCreated : loadingToPrepare;
   const error = tab === "created" ? errorCreated : errorToPrepare;
