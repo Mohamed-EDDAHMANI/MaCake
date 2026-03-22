@@ -38,7 +38,17 @@
       "Bash(for f:*)",
       "Bash(do)",
       "Bash(echo \"=== $f ===\")",
-      "Read(//c/Users/Youcode/Desktop/MaCake/catalog-service/**)"
+      "Read(//c/Users/Youcode/Desktop/MaCake/catalog-service/**)",
+      "Bash(__NEW_LINE_1322dbd94a78f72b__ find:*)",
+      "Bash(__NEW_LINE_6ba5dbecd367e51f__ cat:*)",
+      "Bash(__NEW_LINE_bec54dc3b2fd403f__ perl -i -pe \":*)",
+      "Bash(__NEW_LINE_bec54dc3b2fd403f__ rm:*)",
+      "Bash(npx tsc:*)",
+      "Bash(for svc:*)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(grep -n \"Type ''''{}''''\" /c/Users/Youcode/Desktop/MaCake/payment-service/src/application/use-cases/payment/create-payment.use-case.spec.ts)",
+      "Bash(git -C /c/Users/Youcode/Desktop/MaCake show HEAD:order-service/src/modules/order-item/dto/create-order-item.dto.ts)",
+      "Bash(perl -i -pe \"s|''../../order-item/dto/create-order-item\\\\.dto''|''./create-order-item.dto''|g\" /c/Users/Youcode/Desktop/MaCake/order-service/src/presentation/dto/create-order.dto.ts)"
     ]
   }
 }

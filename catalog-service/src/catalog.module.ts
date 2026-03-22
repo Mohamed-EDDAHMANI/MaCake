@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { CatalogDatabaseModule } from './infrastructure/database/catalog-database.module';
 import { MessagingModule } from './messaging';
+import { CategoryResolverDomainService } from './domain/services/category-resolver.domain-service';
 import { ProductController } from './presentation/controllers/product.controller';
 import { CategoryController } from './presentation/controllers/category.controller';
 import { CreateProductUseCase } from './application/use-cases/product/create-product.use-case';
@@ -20,6 +21,7 @@ import { RemoveCategoryUseCase } from './application/use-cases/category/remove-c
   imports: [CatalogDatabaseModule, MessagingModule],
   controllers: [ProductController, CategoryController],
   providers: [
+    CategoryResolverDomainService,
     CreateProductUseCase,
     FindAllProductsUseCase,
     FindOneProductUseCase,

@@ -47,11 +47,11 @@ export class CategoryRepository implements ICategoryRepository {
   }
 
   private toDomain(doc: CategoryDocument): Category {
-    return new Category(
-      doc._id.toString(),
-      doc.name,
-      doc.description ?? '',
-      (doc as any).createdAt,
-    );
+    return Category.reconstitute({
+      id: doc._id.toString(),
+      name: doc.name,
+      description: doc.description ?? '',
+      createdAt: (doc as any).createdAt,
+    });
   }
 }

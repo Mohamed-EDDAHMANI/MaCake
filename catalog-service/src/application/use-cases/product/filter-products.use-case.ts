@@ -1,8 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { PRODUCT_REPOSITORY } from '../../../domain/repositories/product.repository.interface';
 import type { IProductRepository } from '../../../domain/repositories/product.repository.interface';
-import { CATEGORY_REPOSITORY } from '../../../domain/repositories/category.repository.interface';
-import type { ICategoryRepository } from '../../../domain/repositories/category.repository.interface';
+import { CategoryResolverDomainService } from '../../../domain/services/category-resolver.domain-service';
+import { ProductMapper } from '../../mappers/product.mapper';
 import { ServiceError } from '../../../common/exceptions';
 import { ApiResponse, successPayload } from '../../../common/types/response-helpers';
 
@@ -21,15 +21,17 @@ export class FilterProductsUseCase {
 
   constructor(
     @Inject(PRODUCT_REPOSITORY) private readonly productRepo: IProductRepository,
-    @Inject(CATEGORY_REPOSITORY) private readonly categoryRepo: ICategoryRepository,
+    private readonly categoryResolver: CategoryResolverDomainService,
   ) {}
 
   async execute(filter: FilterProductsInput): Promise<ApiResponse<any> | ServiceError> {
     try {
       let categoryId = filter.categoryId;
+
       if (!categoryId && (filter.categoryName || filter.category)) {
-        const cat = await this.categoryRepo.findByName(filter.categoryName || filter.category!);
-        if (cat) categoryId = cat.id;
+        const resolved = await this.categoryResolver.resolve(undefined, filter.categoryName ?? filter.category);
+        // If category not found just filter without it (non-blocking)
+        if (!(resolved instanceof ServiceError)) categoryId = resolved;
       }
 
       const products = await this.productRepo.findMany({
@@ -40,33 +42,15 @@ export class FilterProductsUseCase {
         maxPrice: filter.maxPrice,
       });
 
-      const productDtos = products.map((p) => this.toDto(p));
+      const dtos = ProductMapper.toDtoList(products);
 
       return successPayload(
-        productDtos.length ? 'Products filtered successfully' : 'No products found matching criteria',
-        { products: productDtos, count: productDtos.length, filters: filter },
+        dtos.length ? 'Products filtered successfully' : 'No products found matching criteria',
+        { products: dtos, count: dtos.length, filters: filter },
       );
     } catch (error: any) {
-      return new ServiceError(
-        'INTERNAL_SERVER_ERROR',
-        `Failed to filter products: ${error.message}`,
-        500,
-        'catalog-service',
-        { originalError: error.code },
-      );
+      return new ServiceError('INTERNAL_SERVER_ERROR', `Failed to filter products: ${error.message}`, 500,
+        'catalog-service', { originalError: error.code });
     }
-  }
-
-  private toDto(p: { id: string; title: string; description: string; price: number; isActive: boolean; categoryId: string; category?: { id: string; name: string }; createdAt?: Date }) {
-    return {
-      id: p.id,
-      title: p.title,
-      description: p.description,
-      price: p.price,
-      isActive: p.isActive,
-      categoryId: p.categoryId,
-      category: p.category,
-      createdAt: p.createdAt,
-    };
   }
 }

@@ -8,9 +8,10 @@ import {
   HeadBucketCommand,
   PutBucketPolicyCommand,
 } from '@aws-sdk/client-s3';
+import type { IFileStoragePort } from '../application/ports/file-storage.port';
 
 @Injectable()
-export class S3Service implements OnModuleInit {
+export class S3Service implements IFileStoragePort, OnModuleInit {
   private readonly logger = new Logger(S3Service.name);
   private client: S3Client;
   private bucket: string;
@@ -115,6 +116,12 @@ export class S3Service implements OnModuleInit {
     const relativePath = `/files/${this.bucket}/${key}`;
     this.logger.debug(`Uploaded category image: ${relativePath}`);
     return relativePath;
+  }
+
+  /** IFileStoragePort — delete a file by its relative path (/files/bucket/key). */
+  async deleteFile(relativePath: string): Promise<void> {
+    const key = relativePath.replace(`/files/${this.bucket}/`, '');
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
   }
 
   async deleteObject(key: string): Promise<void> {

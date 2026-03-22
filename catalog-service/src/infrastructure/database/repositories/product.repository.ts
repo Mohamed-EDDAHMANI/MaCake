@@ -116,20 +116,20 @@ export class ProductRepository implements IProductRepository {
       catId && typeof catId === 'object' && 'name' in catId
         ? { id: catId._id?.toString(), name: catId.name }
         : undefined;
-    return new Product(
-      doc._id.toString(),
-      obj.title ?? obj.name ?? '',
-      obj.description ?? '',
-      obj.price,
-      obj.isActive ?? true,
-      categoryIdStr,
+    return Product.reconstitute({
+      id: doc._id.toString(),
+      title: obj.title ?? obj.name ?? '',
+      description: obj.description ?? '',
+      price: obj.price,
+      isActive: obj.isActive ?? true,
+      categoryId: categoryIdStr,
       category,
-      obj.createdAt,
-      obj.images,
-      obj.personalizationOptions,
-      obj.ingredients ?? [],
-      obj.patissiereId?.toString?.() ?? obj.patissiereId,
-      obj.rating,
-    );
+      createdAt: obj.createdAt,
+      images: obj.images,
+      personalizationOptions: obj.personalizationOptions,
+      ingredients: obj.ingredients ?? [],
+      patissiereId: obj.patissiereId?.toString?.() ?? obj.patissiereId,
+      rating: obj.rating,
+    });
   }
 }
