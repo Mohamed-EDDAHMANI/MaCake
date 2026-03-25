@@ -18,6 +18,8 @@ export interface OrderProps {
   status: OrderStatus;
   items?: any[];
   createdAt?: Date;
+  deletedByPatissiere?: boolean;
+  deletedByClient?: boolean;
 }
 
 export class Order {
@@ -109,6 +111,14 @@ export class Order {
 
   get createdAt(): Date | undefined {
     return this.props.createdAt;
+  }
+
+  get deletedByPatissiere(): boolean {
+    return this.props.deletedByPatissiere ?? false;
+  }
+
+  get deletedByClient(): boolean {
+    return this.props.deletedByClient ?? false;
   }
 
   accept(): void {

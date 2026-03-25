@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Image } from "expo-image";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -23,6 +23,7 @@ import {
   getClientOrderByIdApi,
   getPatissiereOrdersApi,
   markDeliveredByClientApi,
+  refuseOrderApi,
   type ClientOrder,
   type ClientOrderItem,
 } from "@/store/features/order/orderApi";
@@ -125,6 +126,7 @@ export default function OrderDetailsScreen() {
   const [productById, setProductById] = useState<Record<string, ProductPreview>>({});
   const [otherParty, setOtherParty] = useState<AuthUser | null>(null);
   const [accepting, setAccepting] = useState(false);
+  const [refusing, setRefusing] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [estimationsRefresh, setEstimationsRefresh] = useState(0);
   const [showRatingModal, setShowRatingModal] = useState(false);
@@ -340,6 +342,22 @@ export default function OrderDetailsScreen() {
     }
   };
 
+  const refuseOrder = async (orderId: string) => {
+    if (!order || refusing) return;
+    try {
+      setRefusing(true);
+      setActionError(null);
+      await refuseOrderApi(orderId);
+      Alert.alert("Success", "Order refused successfully", [
+        { text: "OK", onPress: () => router.back() },
+      ]);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "Failed to refuse order";
+      setActionError(msg);
+      setRefusing(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -507,10 +525,16 @@ export default function OrderDetailsScreen() {
 
         <View style={styles.actions}>
           {showAcceptButton ? (
-            <Pressable style={styles.acceptAction} onPress={handleAcceptOrder} disabled={accepting}>
-              <MaterialIcons name="check-circle" size={18} color="#fff" />
-              <Text style={styles.acceptActionText}>{accepting ? "Accepting..." : "Accept Order"}</Text>
-            </Pressable>
+            <View style={styles.acceptRefuseRow}>
+              <Pressable style={[styles.acceptAction, styles.acceptRefuseBtn]} onPress={handleAcceptOrder} disabled={accepting}>
+                <MaterialIcons name="check-circle" size={18} color="#fff" />
+                <Text style={styles.acceptActionText}>{accepting ? "Accepting..." : "Accept Order"}</Text>
+              </Pressable>
+              <Pressable style={[styles.refuseAction, styles.acceptRefuseBtn]} onPress={() => refuseOrder(order.id)} disabled={refusing}>
+                <MaterialIcons name="cancel" size={18} color="#fff" />
+                <Text style={styles.acceptActionText}>{refusing ? "Refusing..." : "Refuse Order"}</Text>
+              </Pressable>
+            </View>
           ) : null}
           {showCompleteButton ? (
             <Pressable
@@ -912,6 +936,22 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     gap: 8,
+  },
+  refuseAction: {
+    height: 50,
+    borderRadius: 12,
+    backgroundColor: "#dc2626",
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+  },
+  acceptRefuseRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  acceptRefuseBtn: {
+    flex: 1,
   },
   acceptActionText: { color: "#fff", fontSize: 14, fontWeight: "800" },
   paymentAction: {

@@ -23,7 +23,7 @@ export interface IOrderRepository {
   findByClientId(clientId: string): Promise<Order[]>;
   findByPatissiereId(patissiereId: string): Promise<Order[]>;
   findMany(filter: { clientId?: string; patissiereId?: string; status?: OrderStatus; userId?: string; role?: string }): Promise<Order[]>;
-  update(id: string, data: Partial<{ status: OrderStatus }>): Promise<Order | null>;
+  update(id: string, data: Partial<{ status: OrderStatus; deletedByPatissiere: boolean; deletedByClient: boolean }>): Promise<Order | null>;
   delete(id: string): Promise<boolean>;
 
   /**

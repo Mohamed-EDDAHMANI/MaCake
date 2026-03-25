@@ -57,6 +57,8 @@ export interface ClientOrder {
   /** Total number of items in the order. */
   itemCount: number;
   createdAt: string;
+  deletedByPatissiere: boolean;
+  deletedByClient: boolean;
   /** Full items — present only when fetching a single order detail. */
   items?: ClientOrderItem[];
 }
@@ -99,6 +101,15 @@ export async function getClientOrderByIdApi(orderId: string): Promise<ClientOrde
 export async function acceptOrderApi(orderId: string): Promise<ClientOrder | null> {
   const res = await api.post(`/s3/order/accept/${orderId}`);
   return res.data?.data ?? null;
+}
+
+export async function refuseOrderApi(orderId: string): Promise<ClientOrder | null> {
+  const res = await api.post(`/s3/order/refuse/${orderId}`);
+  return res.data?.data ?? null;
+}
+
+export async function deleteOrderApi(orderId: string): Promise<void> {
+  await api.delete(`/s3/order/delete/${orderId}`);
 }
 
 export async function completeOrderApi(orderId: string): Promise<ClientOrder | null> {

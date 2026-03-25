@@ -3,6 +3,14 @@ import { ESTIMATION_REPOSITORY } from '../../../domain/repositories/estimation.r
 import type { IEstimationRepository } from '../../../domain/repositories/estimation.repository.interface';
 import { ORDER_REPOSITORY } from '../../../domain/repositories/order.repository.interface';
 import type { IOrderRepository } from '../../../domain/repositories/order.repository.interface';
+import { OrderStatus } from '../../../domain/value-objects/order-status.value-object';
+
+/** Order statuses that mean the delivery cycle is over or irrelevant. */
+const TERMINAL_ORDER_STATUSES = new Set<string>([
+  // OrderStatus.DELIVERING,
+  OrderStatus.DELIVERED,
+  OrderStatus.REFUSED,
+]);
 
 @Injectable()
 export class FindEstimatedDeliveryEstimationsUseCase {
@@ -18,7 +26,7 @@ export class FindEstimatedDeliveryEstimationsUseCase {
     for (const doc of list) {
       const orderId = String(doc.orderId);
       const order = await this.orderRepository.findWithItemsById(orderId);
-      if (!order) continue;
+      if (!order || TERMINAL_ORDER_STATUSES.has(order.status)) continue;
       data.push({
         estimation: {
           id: String(doc._id),
@@ -35,6 +43,7 @@ export class FindEstimatedDeliveryEstimationsUseCase {
         order,
       });
     }
+    console.log("data", data);
 
     return { success: true, data };
   }

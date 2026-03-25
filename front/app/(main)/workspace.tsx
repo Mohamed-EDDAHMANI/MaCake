@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   View,
   Text,
@@ -334,6 +334,10 @@ function BottomOrdersSheet({
                       <MaterialIcons name="check-circle" size={16} color="#ffffff" />
                       <Text style={styles.doneBadgeText}>Done</Text>
                     </View>
+                  ) : activeTab === "Estimated" ? (
+                    <View style={styles.waitingActionBtn} pointerEvents="none">
+                      <Text style={styles.waitingActionBtnText}>Waiting...</Text>
+                    </View>
                   ) : (
                     <Pressable
                       style={styles.primaryActionBtn}
@@ -399,6 +403,7 @@ export default function WorkspaceScreen() {
   const [historicLoading, setHistoricLoading] = useState(true);
   const [selectedOrderIdForMap, setSelectedOrderIdForMap] = useState<string | null>(null);
   const [estimationModalOrderId, setEstimationModalOrderId] = useState<string | null>(null);
+  const webViewRef = useRef<import("react-native-webview").WebView>(null);
   const fullscreenProgress = useSharedValue(0);
   const insets = useSafeAreaInsets();
   const headerTop = insets.top + (Platform.OS === "ios" ? 8 : 12);
@@ -720,7 +725,8 @@ export default function WorkspaceScreen() {
       out.push({
         lat: deliveryLat,
         lng: deliveryLng,
-        label: "Delivery",
+        label: "Client",
+        type: "delivery" as const,
       });
     }
     // Patissiere pickup: prefer coordinates stored in order, fall back to auth profile
@@ -731,7 +737,8 @@ export default function WorkspaceScreen() {
       out.push({
         lat: pickupLat,
         lng: pickupLng,
-        label: "Pickup",
+        label: "Bakery",
+        type: "pickup" as const,
       });
     }
     return out;
@@ -815,7 +822,9 @@ export default function WorkspaceScreen() {
   );
 
   // Orders already accepted by ANY delivery (status changed past "pending")
-  const TERMINAL_ORDER_STATUSES = new Set(["delivering", "delivered", "refused"]);
+  // For the Estimated tab we should still show pending offers even if the order
+  // already moved to "delivering" (backend may consider it started).
+  const TERMINAL_ORDER_STATUSES = new Set(["delivered", "refused"]);
 
   // Available: client estimations NOT already estimated by this delivery
   const filteredAvailableList = useMemo(
@@ -930,6 +939,8 @@ export default function WorkspaceScreen() {
           </View>
         ) : (
           <WebView
+            ref={webViewRef}
+            key={`map-${selectedOrderIdForMap ?? "none"}`}
             source={{ html: mapHtml }}
             style={styles.webview}
             scrollEnabled={false}
@@ -974,10 +985,10 @@ export default function WorkspaceScreen() {
 
         <View style={styles.controlsWrap}>
           <View style={styles.zoomCard}>
-            <Pressable style={styles.zoomBtn}>
+            <Pressable style={styles.zoomBtn} onPress={() => webViewRef.current?.injectJavaScript('map.zoomIn(); true;')}>
               <MaterialIcons name="add" size={22} color={SLATE_600} />
             </Pressable>
-            <Pressable style={[styles.zoomBtn, styles.zoomBtnLast]}>
+            <Pressable style={[styles.zoomBtn, styles.zoomBtnLast]} onPress={() => webViewRef.current?.injectJavaScript('map.zoomOut(); true;')}>
               <MaterialIcons name="remove" size={22} color={SLATE_600} />
             </Pressable>
           </View>
@@ -1031,7 +1042,32 @@ export default function WorkspaceScreen() {
           orderId={estimationModalOrderId ?? ""}
           role="delivery"
           onClose={() => setEstimationModalOrderId(null)}
-          onSuccess={() => {
+          onSuccess={({ orderId, estimation }) => {
+            const source = filteredAvailableList.find(({ order }) => order.id === orderId);
+            if (source) {
+              const normalizedEstimation = estimation && estimation.id
+                ? estimation
+                : {
+                    id: `tmp-${orderId}-${Date.now()}`,
+                    orderId,
+                    details: estimation?.details ?? "Delivery estimation",
+                    price: estimation?.price ?? 0,
+                    userRole: "delivery" as const,
+                    status: "pending" as const,
+                    createdBy: estimation?.createdBy ?? user?.id ?? null,
+                    acceptedBy: estimation?.acceptedBy ?? null,
+                    paidAt: estimation?.paidAt ?? null,
+                    createdAt: estimation?.createdAt ?? new Date().toISOString(),
+                  };
+              setEstimatedList((prev) => {
+                const existsByOrder = prev.some((entry) => entry.order.id === orderId);
+                const existsById = prev.some(
+                  (entry) => entry.estimation.id === normalizedEstimation.id
+                );
+                if (existsByOrder || existsById) return prev;
+                return [{ estimation: normalizedEstimation, order: source.order }, ...prev];
+              });
+            }
             setEstimationModalOrderId(null);
             // Reload Estimated (new offer appears) + Accepted (in case auto-confirmed)
             // Available is intentionally NOT reloaded — the new offer moves to Estimated via filter
@@ -1492,6 +1528,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#ffffff",
+  },
+  waitingActionBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: "rgba(100,116,139,0.25)", // slate-ish disabled
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  waitingActionBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: SLATE_600,
   },
   viewDetailsBtn: {
     width: 48,

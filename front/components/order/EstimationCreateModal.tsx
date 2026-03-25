@@ -24,6 +24,7 @@ import {
 import {
   createClientEstimationApi,
   createDeliveryEstimationApi,
+  type EstimationItem,
 } from "@/store/features/estimation";
 
 export interface EstimationCreateModalProps {
@@ -32,7 +33,7 @@ export interface EstimationCreateModalProps {
   /** 'client' = client estimation, 'delivery' = delivery estimation (livreur) */
   role?: "client" | "delivery";
   onClose: () => void;
-  onSuccess?: () => void;
+  onSuccess?: (result: { orderId: string; estimation?: EstimationItem }) => void;
 }
 
 export function EstimationCreateModal({
@@ -61,15 +62,18 @@ export function EstimationCreateModal({
         ? `Estimated time: ${mins} min`
         : "Delivery estimation";
       const payload = { orderId, details, price: numPrice };
+      let created: EstimationItem | undefined;
       if (role === "delivery") {
-        await createDeliveryEstimationApi(payload);
+        const res = await createDeliveryEstimationApi(payload) as any;
+        created = (res?.data ?? res) as EstimationItem;
       } else {
-        await createClientEstimationApi(payload);
+        const res = await createClientEstimationApi(payload) as any;
+        created = (res?.data ?? res) as EstimationItem;
       }
       setPrice("");
       setEstimatedMinutes("");
       onClose();
-      onSuccess?.();
+      onSuccess?.({ orderId, estimation: created });
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Failed to send estimation");
     } finally {

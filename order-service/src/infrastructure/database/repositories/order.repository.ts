@@ -42,6 +42,8 @@ export class OrderRepository implements IOrderRepository {
       totalPrice: doc.totalPrice,
       status: doc.status as OrderStatus,
       createdAt: doc.createdAt,
+      deletedByPatissiere: doc.deletedByPatissiere ?? false,
+      deletedByClient: doc.deletedByClient ?? false,
     });
   }
 
@@ -63,6 +65,8 @@ export class OrderRepository implements IOrderRepository {
       requestedDateTime: doc.requestedDateTime,
       totalPrice: doc.totalPrice,
       status: doc.status,
+      deletedByPatissiere: doc.deletedByPatissiere ?? false,
+      deletedByClient: doc.deletedByClient ?? false,
       items: items.map((it) => ({
         id: String(it._id),
         orderId: String(it.orderId),
@@ -170,7 +174,7 @@ export class OrderRepository implements IOrderRepository {
     return docs.map((d) => this.toDomain(d));
   }
 
-  async update(id: string, data: Partial<{ status: OrderStatus }>): Promise<Order | null> {
+  async update(id: string, data: Partial<{ status: OrderStatus; deletedByPatissiere: boolean; deletedByClient: boolean }>): Promise<Order | null> {
     if (!id || !Types.ObjectId.isValid(id)) return null;
     const doc = await this.orderModel.findByIdAndUpdate(id, { $set: data }, { new: true }).lean().exec();
     if (!doc) return null;

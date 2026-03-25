@@ -19,6 +19,8 @@ import { CreateOrderUseCase } from './application/use-cases/order/create-order.u
 import { FindAllOrdersUseCase } from './application/use-cases/order/find-all-orders.use-case';
 import { FindOneOrderUseCase } from './application/use-cases/order/find-one-order.use-case';
 import { AcceptOrderUseCase } from './application/use-cases/order/accept-order.use-case';
+import { RefuseOrderUseCase } from './application/use-cases/order/refuse-order.use-case';
+import { DeleteOrderUseCase } from './application/use-cases/order/delete-order.use-case';
 import { CompleteOrderUseCase } from './application/use-cases/order/complete-order.use-case';
 import { MarkPaymentCompletedUseCase } from './application/use-cases/order/mark-payment-completed.use-case';
 import { MarkDeliveredByClientUseCase } from './application/use-cases/order/mark-delivered-by-client.use-case';
@@ -63,6 +65,8 @@ import { FindEstimationByIdUseCase } from './application/use-cases/estimation/fi
     FindAllOrdersUseCase,
     FindOneOrderUseCase,
     AcceptOrderUseCase,
+    RefuseOrderUseCase,
+    DeleteOrderUseCase,
     CompleteOrderUseCase,
     MarkPaymentCompletedUseCase,
     MarkDeliveredByClientUseCase,

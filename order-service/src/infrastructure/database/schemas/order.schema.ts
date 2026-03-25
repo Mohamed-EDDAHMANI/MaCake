@@ -54,6 +54,12 @@ export class Order {
   @Prop({ type: Number, required: true })
   totalPrice: number;
 
+  @Prop({ type: Boolean, default: false })
+  deletedByPatissiere: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  deletedByClient: boolean;
+
   @Prop({ type: Date, default: Date.now })
   createdAt: Date;
 }

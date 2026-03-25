@@ -7,6 +7,8 @@ import { CreateOrderUseCase } from '../../application/use-cases/order/create-ord
 import { FindAllOrdersUseCase } from '../../application/use-cases/order/find-all-orders.use-case';
 import { FindOneOrderUseCase } from '../../application/use-cases/order/find-one-order.use-case';
 import { AcceptOrderUseCase } from '../../application/use-cases/order/accept-order.use-case';
+import { RefuseOrderUseCase } from '../../application/use-cases/order/refuse-order.use-case';
+import { DeleteOrderUseCase } from '../../application/use-cases/order/delete-order.use-case';
 import { CompleteOrderUseCase } from '../../application/use-cases/order/complete-order.use-case';
 import { MarkPaymentCompletedUseCase } from '../../application/use-cases/order/mark-payment-completed.use-case';
 import { MarkDeliveredByClientUseCase } from '../../application/use-cases/order/mark-delivered-by-client.use-case';
@@ -22,6 +24,8 @@ export class OrderDddController {
     private readonly findAllOrdersUseCase: FindAllOrdersUseCase,
     private readonly findOneOrderUseCase: FindOneOrderUseCase,
     private readonly acceptOrderUseCase: AcceptOrderUseCase,
+    private readonly refuseOrderUseCase: RefuseOrderUseCase,
+    private readonly deleteOrderUseCase: DeleteOrderUseCase,
     private readonly completeOrderUseCase: CompleteOrderUseCase,
     private readonly markPaymentCompletedUseCase: MarkPaymentCompletedUseCase,
     private readonly markDeliveredByClientUseCase: MarkDeliveredByClientUseCase,
@@ -51,6 +55,19 @@ export class OrderDddController {
   acceptFromGatewayRoute(@Payload() payload: { params: { id: string }; user?: { sub?: string } }) {
     const id = payload.params.id;
     return this.acceptOrderUseCase.execute(id, payload?.user?.sub ?? '');
+  }
+
+  @MessagePattern(ORDERS_PATTERNS.ORDER_REFUSE)
+  refuse(@Payload() payload: { params: { id: string }; user?: { sub?: string } }) {
+    const id = payload.params.id;
+    return this.refuseOrderUseCase.execute(id, payload?.user?.sub ?? '');
+  }
+
+  // Compatibility for gateway forwarding "/order/refuse/:id" as pattern "order/refuse"
+  @MessagePattern('order/refuse')
+  refuseFromGatewayRoute(@Payload() payload: { params: { id: string }; user?: { sub?: string } }) {
+    const id = payload.params.id;
+    return this.refuseOrderUseCase.execute(id, payload?.user?.sub ?? '');
   }
 
   // Compatibility for gateway forwarding "/order/complete/:id" as pattern "order/complete"
@@ -139,9 +156,15 @@ export class OrderDddController {
   }
 
   @MessagePattern(ORDERS_PATTERNS.ORDER_REMOVE)
-  remove(@Payload() payload: { params: { id: string } }) {
-    // Not fully implemented in the original service
-    this.logger.warn(`remove: not implemented for orderId=${payload.params.id}`);
-    return;
+  remove(@Payload() payload: { params: { id: string }; user?: { sub?: string; role?: string } }) {
+    const id = payload.params.id;
+    return this.deleteOrderUseCase.execute(id, payload?.user?.sub ?? '', payload?.user?.role ?? '');
+  }
+
+  // Compatibility for gateway forwarding "/order/delete/:id" as pattern "order/delete"
+  @MessagePattern('order/delete')
+  deleteFromGatewayRoute(@Payload() payload: { params: { id: string }; user?: { sub?: string; role?: string } }) {
+    const id = payload.params.id;
+    return this.deleteOrderUseCase.execute(id, payload?.user?.sub ?? '', payload?.user?.role ?? '');
   }
 }

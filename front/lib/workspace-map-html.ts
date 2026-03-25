@@ -4,7 +4,7 @@
  */
 const OSM_DEFAULT = { lat: 31.7917, lng: -7.0926 };
 
-export type MapMarker = { lat: number; lng: number; label: string };
+export type MapMarker = { lat: number; lng: number; label: string; type?: "delivery" | "pickup" };
 
 export function buildWorkspaceMapHtml(
   userLat: number,
@@ -22,6 +22,36 @@ export function buildWorkspaceMapHtml(
   <style>
     html, body, #map { margin: 0; padding: 0; width: 100%; height: 100%; background: #e2e8f0; }
     .leaflet-control-attribution { font-size: 10px; }
+    .marker-pin {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .marker-pin .dot {
+      width: 28px; height: 28px;
+      border-radius: 50% 50% 50% 0;
+      transform: rotate(-45deg);
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 3px 10px rgba(0,0,0,.35);
+    }
+    .marker-pin .dot-inner {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.85);
+      transform: rotate(45deg);
+    }
+    .marker-pin .label {
+      margin-top: 3px;
+      color: #fff;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      white-space: nowrap;
+      box-shadow: 0 1px 4px rgba(0,0,0,.25);
+    }
+    /* dashed route line pulse */
+    @keyframes dash { to { stroke-dashoffset: -20; } }
   </style>
 </head>
 <body>
@@ -38,23 +68,38 @@ export function buildWorkspaceMapHtml(
       attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
+    /* ── You (driver) marker ── */
     var youIcon = L.divIcon({
-      className: 'you-marker',
-      html: '<div style="width:24px;height:24px;border-radius:50%;background:#da1b61;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3);"></div><div style="margin-top:4px;background:#da1b61;color:#fff;font-size:10px;font-weight:bold;padding:2px 6px;border-radius:999px;white-space:nowrap;">You</div>',
-      iconSize: [24, 36],
-      iconAnchor: [12, 12]
+      className: '',
+      html: '<div class="marker-pin"><div class="dot" style="background:#da1b61;"><div class="dot-inner"></div></div><div class="label" style="background:#da1b61;">You</div></div>',
+      iconSize: [30, 52],
+      iconAnchor: [15, 42],
+      popupAnchor: [0, -44]
     });
-    L.marker([userLat, userLng], { icon: youIcon }).addTo(map);
+    var youMarker = L.marker([userLat, userLng], { icon: youIcon }).addTo(map);
+
+    /* ── Delivery / Pickup markers ── */
+    var colors = { delivery: '#0d9488', pickup: '#f59e0b', default: '#6366f1' };
+    var allLatLngs = [[userLat, userLng]];
 
     markers.forEach(function(m) {
+      var color = m.type === 'pickup' ? colors.pickup : m.type === 'delivery' ? colors.delivery : colors.default;
       var icon = L.divIcon({
-        className: 'delivery-marker',
-        html: '<div style="width:20px;height:20px;border-radius:50%;background:#0d9488;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);"></div><div style="margin-top:2px;background:#0d9488;color:#fff;font-size:9px;font-weight:bold;padding:1px 4px;border-radius:999px;white-space:nowrap;">' + (m.label || '') + '</div>',
-        iconSize: [20, 30],
-        iconAnchor: [10, 10]
+        className: '',
+        html: '<div class="marker-pin"><div class="dot" style="background:' + color + ';"><div class="dot-inner"></div></div><div class="label" style="background:' + color + ';">' + (m.label || '') + '</div></div>',
+        iconSize: [30, 52],
+        iconAnchor: [15, 42],
+        popupAnchor: [0, -44]
       });
-      L.marker([m.lat, m.lng], { icon: icon }).addTo(map);
+      L.marker([m.lat, m.lng], { icon: icon }).addTo(map).bindPopup('<b>' + (m.label || '') + '</b>');
+      allLatLngs.push([m.lat, m.lng]);
     });
+
+    /* ── Auto-fit bounds to show all points ── */
+    if (markers.length > 0) {
+      var bounds = L.latLngBounds(allLatLngs);
+      map.fitBounds(bounds, { padding: [48, 48], maxZoom: 15 });
+    }
   </script>
 </body>
 </html>

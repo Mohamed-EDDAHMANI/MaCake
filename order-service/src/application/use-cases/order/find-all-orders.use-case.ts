@@ -62,6 +62,8 @@ export class FindAllOrdersUseCase {
           firstProductId: first?.productId ?? null,
           itemCount: first?.itemCount ?? 0,
           createdAt: order.createdAt,
+          deletedByPatissiere: order.deletedByPatissiere,
+          deletedByClient: order.deletedByClient,
         };
       }),
     };
